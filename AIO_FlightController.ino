@@ -34,19 +34,20 @@ void setup() {
   DDRE = DDRE | B01000000; //sets pin D7 as output (ties to PPM pin --> not used)
 
   delay(2000); //give time for RX to get connection
-  initSbus();
-  initIMU();
+  initSbus();  //connect to the remote reciever (rx.cpp)
+  initIMU();   //activate the imu and set gyroscope and accelerometer sensitivity (imu.cpp)
   
-  //initilization and one time data collection about the enviornment --> store information and use to calibrate for flight
+  /* initilization and one time data collection about the enviornment 
+   * --> store information and use it to calibrate for flight
+   * 
+   */
 
-  
 }
 
 void loop() {
-    //digitalWrite(8, HIGH);
 
-    readIMU();
-    readRx(); 
+    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
+    readRx();  //read the remote and convert data to a rotational rate of ±180°/s
 
     if(failsafeState() == 0){
       
@@ -54,18 +55,18 @@ void loop() {
         case 0: //if the arm switch is set to 0, do not enable the quadcopter
           armState = false; break;
       
-        case 1: //if the arm switch is set to one, start the PID calculation
+        case 1: //if the arm switch is set to 1, start the PID calculation
           armState = true;
-          initPids();
+          initPids(); //start PID calcuation (pid.cpp)
           
             //if(failsafeState() == 0 && abs(imu_angles().x) < 20 && abs(imu_angles().x) < 20 || armState == lastArmState){
                //only activate motors if angle is less than 20°
             
-              //only active if failsafe is disengaged
-               writeMotor(0, motorPwmOut().one); //PWM motor 1
-               writeMotor(1, motorPwmOut().two); //PWM motor 2
+              //only activate if failsafe is disengaged
+               writeMotor(0, motorPwmOut().one);   //PWM motor 1
+               writeMotor(1, motorPwmOut().two);   //PWM motor 2
                writeMotor(2, motorPwmOut().three); //PWM motor 3
-               writeMotor(3, motorPwmOut().four); //PWM motor 4
+               writeMotor(3, motorPwmOut().four);  //PWM motor 4
               
             break;
         
@@ -76,10 +77,10 @@ void loop() {
           armState = false; break; 
       }
     }else if(failsafeState != 0){
-    //disarm if failsafe is triggered
+    //turn motors off if failsafe is triggered
     armState = false;
     }else{
-    //set motors low
+    //turn motors off if something else happens
     armState = false;
     }
                 
@@ -90,10 +91,8 @@ void loop() {
       writeMotor(3, 0);
     }
     
-    printGUIData();
+    printGUIData(); // used for GUI application
     lastArmState = armState;
-    //delayMicroseconds(50);
-    //digitalWrite(8, LOW);
 
 }
 
