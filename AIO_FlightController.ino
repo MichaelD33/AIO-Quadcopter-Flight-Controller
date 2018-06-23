@@ -1,4 +1,3 @@
-
 /*
  * AIO_FlightController - An integrated quadcopter flight controller program for the Arduino platform.
  * Copyright © 2018 Michael Delaney. All rights reserved.
@@ -18,9 +17,9 @@
 #include "config.h"
 
 /*
-int motorOutput[] = {13, 6, 10, 9};
-int motorOutput[] = {9, 5, 10, 6}; //version 1 configuration
-int motorOutput[] = {9, 5, 10, 6}; //version 3 configuration  *STILL TBD!!*
+int motorOutput[] = {13, 6, 10, 9}; //BOTTOM RIGHT, BOTTOM LEFT, TOP LEFT, TOP RIGHT
+int motorOutput[] = {9, 5, 10, 6};  //version 1 configuration
+int motorOutput[] = {x, x, x, x};   //version 3 configuration  *STILL TBD!!*
 */
 int motorOutput[] = {10, 9, 13, 6}; //version 2 configuration
 bool armState = false;
@@ -91,7 +90,7 @@ void loop() {
       writeMotor(3, 0);
     }
     
-    printGUIData(); // used for GUI application
+    //printGUIData(); // used for GUI application
     lastArmState = armState;
 
 }
@@ -114,9 +113,9 @@ void printGUIData(){
     Serial.print(" ");
     Serial.print(chPitch());
     Serial.print(" ");
-    Serial.print(chYaw());
-    Serial.print(" ");
-    Serial.println(failsafeState());
+    Serial.println(chYaw());
+    //Serial.print(" ");
+    //Serial.println(failsafeState());
     
     
 }
