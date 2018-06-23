@@ -39,24 +39,13 @@ void initPids(){
   }
   
   long currentTime = micros();
-     timeChange = (float)(currentTime - lastTime);
-     lastTime = currentTime;
- if(timeChange >= PID_SAMPLETIME){
+  timeChange = (float)(currentTime - lastTime);
   
-    //Serial.print("1: "); 
-    //Serial.println(timeChange); 
-     
-    computePids();
-    resetPids();    
-  }else if(timeChange < PID_SAMPLETIME){
-  
-    delayMicroseconds(PID_SAMPLETIME - timeChange);      // HOW DO I CORRECT TO GET ACCURATE PID SAMPLE TIMES? 
-   // Serial.print("2: "); 
-   // Serial.println(timeChange + (PID_SAMPLETIME - timeChange));    
-   
+// if(timeChange >= PID_SAMPLETIME){ 
     computePids();
     resetPids();
-  }
+//  }
+  lastTime = currentTime;
 } 
     
 
@@ -75,17 +64,17 @@ void computePids(){
    // currentAngle.z = imu_rates().z;
 
     //compute all the working error vars
-    error.x =  desiredAngle.x - currentAngle.x;  //present error
-    errorSum.x += error.x;                       //integral of the error
-    deltaError.x = currentAngle.x - lastAngle.x; //derivative of the error
+    error.x =  desiredAngle.x - currentAngle.x;                 //present error
+    errorSum.x += error.x * timeChange;                         //integral of the error
+    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange; //derivative of the error
     
     error.y =  desiredAngle.y - currentAngle.y;
-    errorSum.y += error.y;
-    deltaError.x = currentAngle.x - lastAngle.x; 
+    errorSum.y += error.y * timeChange;
+    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange; 
 
     error.z =  desiredAngle.z - currentAngle.z;
-    errorSum.z += error.z;
-    deltaError.z = currentAngle.z - lastAngle.z; 
+    errorSum.z += error.z * timeChange;
+    deltaError.z = (currentAngle.z - lastAngle.z) / timeChange; 
 
     //compute proportional
     double Px = KpX * error.x;
@@ -125,11 +114,18 @@ void computePids(){
     outputZ = (Pz + Iz - Dz)*(chThrottle() * throttleGain); 
 
     //write outputs to corresponding motors at the corresponding speed
+    
      motorSpeed.one = abs(chThrottle() + outputX - outputY - outputZ); 
      motorSpeed.two = abs(chThrottle() - outputX - outputY + outputZ); 
      motorSpeed.three = abs(chThrottle() - outputX + outputY - outputZ);
      motorSpeed.four = abs(chThrottle() + outputX + outputY + outputZ);
-
+     /*
+     motorSpeed.one = (chThrottle() + outputX - outputY - outputZ); 
+     motorSpeed.two = (chThrottle() - outputX - outputY + outputZ); 
+     motorSpeed.three = (chThrottle() - outputX + outputY - outputZ);
+     motorSpeed.four = (chThrottle() + outputX + outputY + outputZ);
+     */
+     
      //clamp the min and max output from the pid controller (to match the nedded 0-255 for pwm)
      if(motorSpeed.one > 255){
         motorSpeed.one = 255;  
@@ -154,8 +150,7 @@ void computePids(){
        }else if (motorSpeed.four < 0){
         motorSpeed.four = 0;
        }else{  } 
-      
-     
+           
     /*
      Serial.print(outputX);
      Serial.print(", "); 
