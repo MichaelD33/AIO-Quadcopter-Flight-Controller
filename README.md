@@ -34,6 +34,12 @@ Determining the correct order of the motor outputs is quite frustrating and may 
 ### Difficulties
 This project originally began as a personal challenge to improve my embedded programming skills. While I acknowledged the difficulty of programming a device like this, I also was extremely motivated to learn about the ongoing computational processes that take place in an aerial vehicle like a quadcopter. 
 
+Micro scale design leads to stability issues due to increased sensitivity to:
+* Wind
+* Vibrations
+* PID Tuning
+* Changes in CG
+
 ---
 
 ### Next Steps
