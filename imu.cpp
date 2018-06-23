@@ -10,9 +10,9 @@ static axis_float_t angle; // angle calculated using accelerometer
 static axis_float_t accelG; // angle calculated using accelerometer
 static axis_float_t gyroAngles;
 static axis_float_t gyroRates;
-static median_filter_t accel_x_filter = median_filter_new(11,0); //declare median filter for x axis
-static median_filter_t accel_y_filter = median_filter_new(11,0); //declare median filter for y axis
-static median_filter_t accel_z_filter = median_filter_new(11,0); //declare median filter for z axis
+static median_filter_t accel_x_filter = median_filter_new(13,0); //declare median filter for x axis
+static median_filter_t accel_y_filter = median_filter_new(13,0); //declare median filter for y axis
+static median_filter_t accel_z_filter = median_filter_new(13,0); //declare median filter for z axis
 
 float AcXRaw,AcYRaw,AcZRaw,TmpRaw,GyXRaw,GyYRaw,GyZRaw;
 float pitch,roll,yaw;

@@ -16,7 +16,7 @@
 #define ACCEL_SENS 16384
 #define GYRO_SENS 65.6
 
-#define GYRO_PART (0.985)
+#define GYRO_PART (0.98)
 #define ACC_PART (1.0 - GYRO_PART)
 
 #define MPU_addr 0x69
