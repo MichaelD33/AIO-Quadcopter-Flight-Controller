@@ -10,9 +10,10 @@ static axis_float_t angle; // angle calculated using accelerometer
 static axis_float_t accelG; // angle calculated using accelerometer
 static axis_float_t gyroAngles;
 static axis_float_t gyroRates;
-static median_filter_t accel_x_filter = median_filter_new(13,0); //declare median filter for x axis
-static median_filter_t accel_y_filter = median_filter_new(13,0); //declare median filter for y axis
-static median_filter_t accel_z_filter = median_filter_new(13,0); //declare median filter for z axis
+static axis_float_t lastAngle;
+static median_filter_t accel_x_filter = median_filter_new(15,0); //declare median filter for x axis
+static median_filter_t accel_y_filter = median_filter_new(15,0); //declare median filter for y axis
+static median_filter_t accel_z_filter = median_filter_new(15,0); //declare median filter for z axis
 
 float AcXRaw,AcYRaw,AcZRaw,TmpRaw,GyXRaw,GyYRaw,GyZRaw;
 float pitch,roll,yaw;
@@ -20,6 +21,11 @@ float delta_t;
 long previousTime = 0;
 
  void initIMU(){
+  
+  lastAngle.x = 0;
+  lastAngle.y = 0;
+  lastAngle.z = 0;
+  
    Wire.begin();
    Wire.beginTransmission(MPU_addr);
        Wire.write(0x6B);  // PWR_MGMT_1 register
@@ -113,11 +119,16 @@ void imuCombine(){
    angle.y = GYRO_PART * (angle.y + (gyroRates.x * delta_t)) + (1-GYRO_PART) * pitch; //complementary filter
    angle.x = GYRO_PART * (angle.x + (gyroRates.y * delta_t)) + (1-GYRO_PART) * roll;
    angle.z = GYRO_PART * (angle.z + (gyroRates.z * delta_t)) + (1-GYRO_PART) * yaw;
+   Serial.println(angle.x);
+    if(abs(angle.x - lastAngle.x) > 3){
+      angle.x = lastAngle.x + 0.2*(angle.x - lastAngle.x);
+    }
    
    long currentTime = micros();
    delta_t = (float) (currentTime - previousTime) / 1000000;
    previousTime = currentTime;
-
+   Serial.println(angle.x);
+   angle.x = lastAngle.x;
 }
 
 axis_float_t imu_rates() {
