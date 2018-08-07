@@ -40,7 +40,7 @@ void initPids(){
   
   long currentTime = micros();
   timeChange = (float)(currentTime - lastTime);
-  
+
 // if(timeChange >= PID_SAMPLETIME){ 
     computePids();
     resetPids();
@@ -57,7 +57,8 @@ void computePids(){
 
     currentAngle.x = imu_angles().x; //read angle from IMU and set it to the current angle
     currentAngle.y = imu_angles().y;
-    currentAngle.z = imu_angles().z;
+   // currentAngle.z = imu_angles().z;
+    currentAngle.z = 0; //need magnetometer for accurate Z reference - also using reference angle causes directional lock north.
 
    // currentAngle.x = imu_rates().x; //read gyro rates from IMU and set it to the current angle
    // currentAngle.y = imu_rates().y;
@@ -77,19 +78,19 @@ void computePids(){
     deltaError.z = (currentAngle.z - lastAngle.z) / timeChange; 
 
     //compute proportional
-    double Px = KpX * error.x;
-    double Py = KpY * error.y;
-    double Pz = KpZ * error.z;
+    float Px = KpX * error.x;
+    float Py = KpY * error.y;
+    float Pz = KpZ * error.z;
 
     //compute integral
-    double Ix = KiX * errorSum.x;
-    double Iy = KiY * errorSum.y;
-    double Iz = KiZ * errorSum.z;
+    float Ix = KiX * errorSum.x;
+    float Iy = KiY * errorSum.y;
+    float Iz = KiZ * errorSum.z;
 
     //compute derivative
-    double Dx = KdX * deltaError.x;
-    double Dy = KdY * deltaError.y;
-    double Dz = KdZ * deltaError.z;
+    float Dx = KdX * deltaError.x;
+    float Dy = KdY * deltaError.y;
+    float Dz = KdZ * deltaError.z;
 
     //clamp the range of integral values
         if(Ix > maxIx){ 
@@ -159,7 +160,7 @@ void computePids(){
      Serial.print(outputZ);
      Serial.print(", "); 
      Serial.println(motorSpeed.one);
-      
+     
      Serial.print(motorSpeed.one);
      Serial.print(", "); 
      Serial.print(motorSpeed.two);
@@ -167,7 +168,7 @@ void computePids(){
      Serial.print(motorSpeed.three);
      Serial.print(", "); 
      Serial.println(motorSpeed.four);
-   
+    
      Serial.print(Px);
      Serial.print(", "); 
      Serial.print(Ix);
