@@ -4,29 +4,25 @@
 #include "imu.h"
 #include "MedianFilter.h"
 
-static axis_int32_t accelRawValues; // raw data from accelerometer
+
 static axis_float_t accel_filtered; // filtered accelerometer raw values
 static axis_float_t angle; // angle calculated using accelerometer
-static axis_float_t accelG; // angle calculated using accelerometer
 static axis_float_t gyroAngles;
 static axis_float_t gyroRates;
-static axis_float_t lastAngle;
-static median_filter_t accel_x_filter = median_filter_new(15,0); //declare median filter for x axis
-static median_filter_t accel_y_filter = median_filter_new(15,0); //declare median filter for y axis
-static median_filter_t accel_z_filter = median_filter_new(15,0); //declare median filter for z axis
+static median_filter_t accel_x_filter = median_filter_new(19,0); //declare median filter for x axis
+static median_filter_t accel_y_filter = median_filter_new(19,0); //declare median filter for y axis
+static median_filter_t accel_z_filter = median_filter_new(19,0); //declare median filter for z axis
 
 float AcXRaw,AcYRaw,AcZRaw,TmpRaw,GyXRaw,GyYRaw,GyZRaw;
+
 float pitch,roll,yaw;
 float delta_t;
 long previousTime = 0;
+long currentTime = 0;
 
- void initIMU(){
-  
-  lastAngle.x = 0;
-  lastAngle.y = 0;
-  lastAngle.z = 0;
-  
+ void initIMU(){ 
    Wire.begin();
+   Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
    Wire.beginTransmission(MPU_addr);
        Wire.write(0x6B);  // PWR_MGMT_1 register
        Wire.write(0);     // set to zero (wakes up the MPU-6050)
@@ -46,11 +42,12 @@ long previousTime = 0;
    Wire.beginTransmission(MPU_addr);
    Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
    Wire.endTransmission(false);
-
  }
 
 void readIMU(){
 
+   delta_t = (float) (currentTime - previousTime) / 1000000;
+   previousTime = currentTime;
   
    Wire.beginTransmission(MPU_addr);
    Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
@@ -80,18 +77,17 @@ void processGyro(){
   gyroAngles.y += new_rate_y * delta_t;
   gyroAngles.z += new_rate_z * delta_t;
 
-  //float gyro_dt = (float)(micros() - gyro_update_timer) / 1000000;
-  uint8_t f_cut = 80; // Hz                                                       WHAT IS F_CUT DOING? TRY DETERMINING THIS VALUE?
+  uint8_t f_cut = 80; // Hz                                     
   float rc = 1.0f / (2.0f * (float)M_PI * f_cut);
 
   gyroRates.y = gyroRates.y + delta_t / (rc + delta_t) * (new_rate_y - gyroRates.y);
   gyroRates.x = gyroRates.x + delta_t / (rc + delta_t) * (new_rate_x - gyroRates.x);
   gyroRates.z = gyroRates.z + delta_t / (rc + delta_t) * (new_rate_z - gyroRates.z);
-
 }
 
 void processAcc(){
     //filtering accelerometer noise using a median filter
+   
     median_filter_in(accel_x_filter, AcXRaw);
     median_filter_in(accel_y_filter, AcYRaw);
     median_filter_in(accel_z_filter, AcZRaw);
@@ -102,6 +98,7 @@ void processAcc(){
     accel_filtered.z = (float) (median_filter_out(accel_z_filter));
 
     //converting acceleration to force gravity
+    static axis_float_t accelG; // angle calculated using accelerometer
     accelG.x = (accel_filtered.x) / ACCEL_SENS; // 1.33g -> -0.66g
     accelG.y = (accel_filtered.y) / ACCEL_SENS; // 1.05g -> -0.96g
     accelG.z = (accel_filtered.z) / ACCEL_SENS; // 1.09g @ rest:
@@ -118,17 +115,9 @@ void imuCombine(){
   
    angle.y = GYRO_PART * (angle.y + (gyroRates.x * delta_t)) + (1-GYRO_PART) * pitch; //complementary filter
    angle.x = GYRO_PART * (angle.x + (gyroRates.y * delta_t)) + (1-GYRO_PART) * roll;
-   angle.z = GYRO_PART * (angle.z + (gyroRates.z * delta_t)) + (1-GYRO_PART) * yaw;
-   Serial.println(angle.x);
-    if(abs(angle.x - lastAngle.x) > 3){
-      angle.x = lastAngle.x + 0.2*(angle.x - lastAngle.x);
-    }
-   
-   long currentTime = micros();
-   delta_t = (float) (currentTime - previousTime) / 1000000;
-   previousTime = currentTime;
-   Serial.println(angle.x);
-   angle.x = lastAngle.x;
+   angle.z = 1 * (angle.z + (gyroRates.z * delta_t)) + (0) * yaw;
+       
+   currentTime = micros();
 }
 
 axis_float_t imu_rates() {
@@ -145,9 +134,6 @@ float accel_pitch() {
 }
 axis_float_t imu_accel_filtered() {
   return accel_filtered;
-}
-axis_float_t imu_accelG() {
-  return accelG;
 }
 axis_float_t imu_angles() {
   return angle;
