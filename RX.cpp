@@ -8,7 +8,6 @@ int swA, swB, swC, swD, failsafe;
 float varRateX = 0.0333;
 float varRateY = 0.0333;
 float varRateZ = 0.025;
-
 float rateRoll;
 float ratePitch;
 float rateYaw;
@@ -42,23 +41,19 @@ void readRx(){
       failsafe = sBus.failsafe_status;
 
      //map gimbals to outputs       
-      throttleRx = mapFloat(throttleRx, 172, 1811, 0, 230);
-      rollRx = map(rollRx, 172, 1811, -180, 180);
-      pitchRx = map(pitchRx, 172, 1811, -180, 180);
-      yawRx = map(yawRx, 172, 1811, -180, 180);
+     
+      throttleRx = mapFloat(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
+      rollRx = map(rollRx, MINTHROTTLE, MAXTHROTTLE, (RX_RATES*-1), RX_RATES);
+      pitchRx = map(pitchRx, MINTHROTTLE, MAXTHROTTLE, (RX_RATES*-1), RX_RATES);
+      yawRx = map(yawRx, MINTHROTTLE, MAXTHROTTLE, (RX_RATES*-1), RX_RATES);
 
       throttleRate = pow(throttleRx, 2.2);
-      
-      rateRoll = pow(varRateX*rollRx, 3) / pow(180, varRateX);
-      ratePitch = pow(varRateY*pitchRx, 3) / pow(180, varRateY);
-      rateYaw = pow(varRateZ*yawRx, 3) / pow(180, varRateZ);
-
- 
+     
     //map switches to appropriate values
-      swA = map(swA, 172, 1811, 0, 2);
-      swB = map(swB, 172, 1811, 0, 2);
-      swC = map(swC, 172, 1811, 0, 2);
-      swD = map(swD, 172, 1811, 0, 2);
+      swA = map(swA, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      swB = map(swB, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      swC = map(swC, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      swD = map(swD, MINTHROTTLE, MAXTHROTTLE, 0, 2);
 
     }
 }

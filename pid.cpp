@@ -17,9 +17,6 @@ float outputY;
 float outputZ;
 axis_float_t error, deltaError, errorSum, lastAngle;
 float_pwmOut motorSpeed;
-float maxIx = 230;
-float maxIy = 230;
-float maxIz = 230;
 float throttleGain = 0.0023;
 float timeChange;
 long lastTime = 0;
@@ -55,15 +52,19 @@ void computePids(){
     desiredAngle.y = -1 * chPitch(); // FOR RATE MODE: consider using mod() to bring values back to 0 when it goes past 180 (if I change the equation to +=)
     desiredAngle.z = -1 * chYaw();  // multiplied by -1 to flip output of the remote (because right motors need to turn on in order to move to the left - and vice versa)
 
-    currentAngle.x = imu_angles().x; //read angle from IMU and set it to the current angle
-    currentAngle.y = imu_angles().y;
-   // currentAngle.z = imu_angles().z;
-    currentAngle.z = 0; //need magnetometer for accurate Z reference - also using reference angle causes directional lock north.
+    #ifdef HORIZON
+      currentAngle.x = imu_angles().x; //read angle from IMU and set it to the current angle
+      currentAngle.y = imu_angles().y;
+      currentAngle.z = 0; //need magnetometer for accurate Z reference - also using reference angle causes directional lock north.
+    #endif
 
-   // currentAngle.x = imu_rates().x; //read gyro rates from IMU and set it to the current angle
-   // currentAngle.y = imu_rates().y;
-   // currentAngle.z = imu_rates().z;
-
+    #ifdef ACRO
+      currentAngle.x = imu_rates().x; //read gyro rates from IMU and set it to the current angle
+      currentAngle.y = imu_rates().y;
+      //currentAngle.z = imu_rates().z;
+      currentAngle.z = 0; //need magnetometer for accurate Z reference - also using reference angle causes directional lock north.
+    #endif
+    
     //compute all the working error vars
     error.x =  desiredAngle.x - currentAngle.x;                 //present error
     errorSum.x += error.x * timeChange;                         //integral of the error
@@ -93,20 +94,20 @@ void computePids(){
     float Dz = KdZ * deltaError.z;
 
     //clamp the range of integral values
-        if(Ix > maxIx){ 
-          Ix = maxIx; 
-        }else if (Ix < (maxIx * -1)){
-          Ix = maxIx * -1;
+        if(Ix > MAX_INTEGRAL){ 
+          Ix = MAX_INTEGRAL; 
+        }else if (Ix < (MAX_INTEGRAL * -1)){
+          Ix = MAX_INTEGRAL * -1;
         }   
-        if(Iy > maxIy){ 
-          Iy = maxIy; 
-        }else if (Iy < (maxIy * -1)){
-          Iy = maxIy * -1;
+        if(Iy > MAX_INTEGRAL){ 
+          Iy = MAX_INTEGRAL; 
+        }else if (Iy < (MAX_INTEGRAL * -1)){
+          Iy = MAX_INTEGRAL * -1;
         }
-         if(Iz > maxIz){ 
-          Iz = maxIz; 
-        }else if (Iz < (maxIz * -1)){
-          Iz = maxIz * -1;
+         if(Iz > MAX_INTEGRAL){ 
+          Iz = MAX_INTEGRAL; 
+        }else if (Iz < (MAX_INTEGRAL * -1)){
+          Iz = MAX_INTEGRAL * -1;
         }
    
     //compute PID output as a function of the throttle
@@ -128,28 +129,28 @@ void computePids(){
      */
      
      //clamp the min and max output from the pid controller (to match the nedded 0-255 for pwm)
-     if(motorSpeed.one > 255){
-        motorSpeed.one = 255;  
-       }else if (motorSpeed.one < 0){
-        motorSpeed.one = 0;
+     if(motorSpeed.one > ESC_MAX){
+        motorSpeed.one = ESC_MAX;  
+       }else if (motorSpeed.one < ESC_MIN){
+        motorSpeed.one = ESC_MIN;
        }else{  }  
 
-     if(motorSpeed.two > 255){
-        motorSpeed.two = 255;  
-       }else if (motorSpeed.two < 0){
-        motorSpeed.two = 0;
+     if(motorSpeed.two > ESC_MAX){
+        motorSpeed.two = ESC_MAX;  
+       }else if (motorSpeed.two < ESC_MIN){
+        motorSpeed.two = ESC_MIN;
        }else{ } 
 
-     if(motorSpeed.three > 255){
-        motorSpeed.three = 255;  
-       }else if (motorSpeed.three < 0){
-        motorSpeed.three = 0;
+     if(motorSpeed.three > ESC_MAX){
+        motorSpeed.three = ESC_MAX;  
+       }else if (motorSpeed.three < ESC_MIN){
+        motorSpeed.three = ESC_MIN;
        }else{  } 
 
-     if(motorSpeed.four > 255){
-        motorSpeed.four = 255;  
-       }else if (motorSpeed.four < 0){
-        motorSpeed.four = 0;
+     if(motorSpeed.four > ESC_MAX){
+        motorSpeed.four = ESC_MAX;  
+       }else if (motorSpeed.four < ESC_MIN){
+        motorSpeed.four = ESC_MIN;
        }else{  } 
            
     /*
