@@ -29,22 +29,30 @@ Determining the correct order of the motor outputs is quite frustrating and may 
 
 *processor note: this device requires a serial port for the RC input. The receiver is setup under Serial1 for my atmega32u4. This will not work with an atmega328.*
 
+#### Motor Output Diagram
+![alt text](http://delaney.nyc/wp-content/uploads/2018/08/aioFC_outline_annotated.png)
+
 ---
 
 ### Difficulties
-This project originally began as a personal challenge to improve my embedded programming skills. While I acknowledged the difficulty of programming a device like this, I also was extremely motivated to learn about the ongoing computational processes that take place in an aerial vehicle like a quadcopter. 
+This project originally began as a challenge for myself to improve my embedded hardware programming skills. While I acknowledged the difficulty of programming a device like this, I also was extremely motivated to learn about the ongoing computational processes that take place in an aerial vehicle like a quadcopter. Throughout the process of designing the hardware and writing the code for the flight controller I continually encountered issues with both the physical electronics and my programming. I am still attempting to fix a number of these issues, many of which emerge from the physical form factor of the device; however, I have been working on designs and form factors which will hopefully help to mitigate the issues I am currently facing.
 
-Micro scale design leads to stability issues due to increased sensitivity to:
+The micro scale design of the all-in-one(AIO) frame leads to stability issues because of increased sensitivity to:
 * Wind
 * Vibrations
 * PID Tuning
 * Changes in CG
+* Change in Mass
 
 ---
 
 ### Next Steps
 
-* add all configurable parameters to the config.h file.
+* add all configurable parameters to the config.h file. (in progress)
 * expand upon the available sensor options and remote protocols
-* post diagrams of the motor outputs and rotation direction
-* configuration available thru the GUI
+* introduce basic implementation for other microcontrollers
+* switch mode configuration
+* flight mode configuration
+* buzzer on failsafe/switch activation
+* "reverse motor orientation" config
+* ~~configuration available thru the GUI~~~ (GUI development on hold)
