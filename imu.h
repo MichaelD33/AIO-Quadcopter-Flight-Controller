@@ -4,13 +4,14 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "MedianFilter.h"
 
 #ifdef MPU6050_68
-  #define MPU_6050_ADDR 0x68
+  #define MPU_ADDR 0x68
 #endif
 
 #ifdef MPU6050_69
-  #define MPU_6050_ADDR 0x69
+  #define MPU_ADDR 0x69
 #endif
 
 axis_float_t imu_rates();
@@ -25,7 +26,7 @@ void initIMU();
 void readIMU();
 void processGyro();
 void processAcc();
-void imuCombine();
+void imuCombine(median_filter_t, median_filter_t);
 
 
 #endif

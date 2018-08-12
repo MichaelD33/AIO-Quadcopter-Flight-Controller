@@ -10,35 +10,49 @@
  *  to calculations from the control loop.
  * 
  */
-#include <Arduino.h>
+ 
+#include "config.h"
 #include "imu.h"
 #include "RX.h"
 #include "pid.h"
-#include "config.h"
 
-/*
-int motorOutput[] = {13, 6, 10, 9}; //BOTTOM RIGHT, BOTTOM LEFT, TOP LEFT, TOP RIGHT
-int motorOutput[] = {9, 5, 10, 6};  //version 1 configuration
-int motorOutput[] = {x, x, x, x};   //version 3 configuration  *STILL TBD!!*
-*/
-int motorOutput[] = {10, 9, 13, 6}; //version 2 configuration
 bool armState = false;
 bool lastArmState = false;
 
+#ifdef AIO_v1
+byte motorOutput[] = {9, 5, 10, 6};  //version 1 configuration - RETIRED v1
+#define ATMEGA32u4
+#endif
+
+#ifdef AIO_v2
+byte motorOutput[] = {10, 9, 13, 6}; //version 2 configuration - RED BOARD
+#define ATMEGA32u4
+#endif
+
+#ifdef AIO_v3
+byte motorOutput[] = {5, 9, 6, 10};   //version 3 configuration - GREEN BOARD (BAD CG)
+#define ATMEGA32u4
+#endif
+
+
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(9600);
+  
+  #ifdef ATMEGA32u4
   DDRB = DDRB | B11110000; //sets pins D8, D9, D10, D11 as outputs
   DDRC = DDRC | B11000000; //sets pin D5 as output
-  DDRD = DDRD | B10000000; //sets pin D6 as output **NOTICE** SETS D0 as an input, will this interfere with the sBus decoding?
-  DDRE = DDRE | B01000000; //sets pin D7 as output (ties to PPM pin --> not used)
+  DDRD = DDRD | B10000000; //sets pin D6 as output
+  DDRE = DDRE | B01000000; //sets pin D7 as output
+  #endif
 
   delay(2000); //give time for RX to get connection
   initSbus();  //connect to the remote reciever (rx.cpp)
   initIMU();   //activate the imu and set gyroscope and accelerometer sensitivity (imu.cpp)
-  
-  /* initilization and one time data collection about the enviornment 
+  /* 
+   *  initilization and one time data collection about the enviornment 
    * --> store information and use it to calibrate for flight
-   * 
+   *
+   *  
    */
 
 }
@@ -92,7 +106,7 @@ void loop() {
     
     //printGUIData(); // used for GUI application
     lastArmState = armState;
-
+    
 }
 
 
@@ -101,7 +115,6 @@ void writeMotor(int index, float value){
 }
  
 void printGUIData(){
-
     Serial.print("s ");
     Serial.print(imu_angles().x);
     Serial.print(" ");
@@ -116,8 +129,8 @@ void printGUIData(){
     Serial.println(chYaw());
     //Serial.print(" ");
     //Serial.println(failsafeState());
-    
-    
+       
+
 }
 
 int armingState(){
