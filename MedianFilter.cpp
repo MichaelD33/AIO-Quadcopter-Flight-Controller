@@ -102,33 +102,6 @@ int16_t MedianFilter::out() // return the value of the median data sample
 	return  sortedData[medDataPointer];
 }
 
-/*
-void MedianFilter::printData() // display sorting data for debugging
-{
-	for(int i=0; i<medFilterWin; i++){
-		Serial.print(sortedData[i]);
-		Serial.print("\t");
-	}
-	Serial.print("\t");
-	Serial.println("Data sorted by size");
-
-	for(int i=0; i<medFilterWin; i++){
-		Serial.print(historyMap[i]);
-		Serial.print("\t");
-	}
-	Serial.print("\t");
-	Serial.println("Locations of data sorted by age");
-
-	for(int i=0; i<medFilterWin; i++){
-		Serial.print(locationMap[i]);
-		Serial.print("\t");
-	}
-	Serial.print("\t");
-	Serial.println("Location of age data in age list sorted by data size");
-	Serial.println("");
-}
-*/
-
 
 typedef void* median_filter_t;
 
