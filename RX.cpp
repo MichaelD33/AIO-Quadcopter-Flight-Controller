@@ -1,17 +1,12 @@
 #include <Arduino.h>
-#include <Streaming.h>
+#include "config.h"
+#include "SBUS.h"
 #include "RX.h"
 
 float throttleRx;
-int rollRx, pitchRx, yawRx;
-int swA, swB, swC, swD, failsafe;
-float varRateX = 0.0333;
-float varRateY = 0.0333;
-float varRateZ = 0.025;
-float rateRoll;
-float ratePitch;
-float rateYaw;
-float throttleRate;
+int rollRx, pitchRx, yawRx, swA, swB, swC, swD, failsafe;
+float rollRate, pitchRate, yawRate, throttleRate;
+
 // y = ((varRate*x)^3)/180^varRate
 
 SBUS sBus;
@@ -23,7 +18,6 @@ void initSbus(){
 void readRx(){
     sBus.FeedLine();
     if (sBus.toChannels == 1){
-      //sBus.UpdateServos();
       sBus.UpdateChannels();
       sBus.toChannels = 0;
 
@@ -41,13 +35,18 @@ void readRx(){
       failsafe = sBus.failsafe_status;
 
      //map gimbals to outputs       
-     
       throttleRx = mapFloat(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
-      rollRx = map(rollRx, MINTHROTTLE, MAXTHROTTLE, (RX_RATES*-1), RX_RATES);
-      pitchRx = map(pitchRx, MINTHROTTLE, MAXTHROTTLE, (RX_RATES*-1), RX_RATES);
-      yawRx = map(yawRx, MINTHROTTLE, MAXTHROTTLE, (RX_RATES*-1), RX_RATES);
+      rollRx = map(rollRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
+      pitchRx = map(pitchRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
+      yawRx = map(yawRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
 
+     
+    //FIX SUPER RATE MAPPING
       throttleRate = pow(throttleRx, 2.2);
+//    rollRate = pow(rollRx, );
+//    pitchRate = pow(pitchRx, );
+//    yawRate = pow(yawRx, );
+
      
     //map switches to appropriate values
       swA = map(swA, MINTHROTTLE, MAXTHROTTLE, 0, 2);
@@ -68,15 +67,18 @@ float chThrottle(){
 }
 
 float chRoll() {
-  return rateRoll;
+  //return rollRate;
+  return rollRx;
 }
 
 float chPitch() {
-  return ratePitch;
+  //return pitchRate;
+  return pitchRx;
 }
 
 float chYaw() {
-  return rateYaw;
+  //return yawRate;
+  return yawRx;
 }
 
 int chAux1() {

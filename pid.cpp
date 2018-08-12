@@ -10,16 +10,21 @@
 #include "pid.h"
 #include "config.h"
 
-axis_float_t desiredAngle;
-axis_float_t currentAngle;
 float outputX;
 float outputY;
 float outputZ;
-axis_float_t error, deltaError, errorSum, lastAngle;
-float_pwmOut motorSpeed;
 float throttleGain = 0.0023;
 float timeChange;
 long lastTime = 0;
+
+
+axis_float_t desiredAngle;
+axis_float_t currentAngle;
+
+axis_float_t error, deltaError, errorSum, lastAngle;
+
+float_pwmOut motorSpeed;
+
 
 
 void initPids(){
