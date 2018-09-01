@@ -26,7 +26,7 @@ void initIMU();
 void readIMU();
 void processGyro();
 void processAcc();
-void imuCombine(median_filter_t, median_filter_t);
+void imuCombine();
 
 
 #endif
