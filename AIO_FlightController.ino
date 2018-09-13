@@ -1,8 +1,8 @@
 /*
- * AIO_FlightController - An integrated quadcopter flight controller program for the Arduino platform.
- * Copyright © 2018 Michael Delaney. All rights reserved.
+ *  AIO_FlightController - An integrated quadcopter flight controller program for the Arduino platform.
+ *  Copyright © 2018 Michael Delaney. All rights reserved.
  * 
- *  This device takes data from an inertial measurement unit about it's position and angle of inclination 
+ *  This device takes data from an inertial measurement unit about its position and angle of inclination 
  *  and receieves information from the remote about the next desired action and makes several calculations 
  *  to determine the difference between the desired action, dictated by the remote, 
  *  and the actual response from the drone, measured by the accelerometer and gyroscope. Using this
@@ -10,7 +10,8 @@
  *  to calculations from the control loop.
  * 
  */
- 
+
+#include <Arduino.h>
 #include "config.h"
 #include "imu.h"
 #include "RX.h"
@@ -20,23 +21,25 @@ bool armState = false;
 bool lastArmState = false;
 
 #ifdef AIO_v1
-byte motorOutput[] = {9, 5, 10, 6};  //version 1 configuration - RETIRED v1
+byte motorOutput[] = {9, 5, 10, 6};  //prototype configuration - RETIRED
 #define ATMEGA32u4
 #endif
 
 #ifdef AIO_v2
-byte motorOutput[] = {10, 9, 13, 6}; //version 2 configuration - RED BOARD
+byte motorOutput[] = {10, 9, 13, 6}; //version 1 configuration - RED BOARD
+//byte motorOutput[] = {10, 9, 5, 6};  //version 1 configuration - UPDATED PINOUT (USE THIS ONE)
 #define ATMEGA32u4
 #endif
 
 #ifdef AIO_v3
-byte motorOutput[] = {5, 9, 6, 10};   //version 3 configuration - GREEN BOARD (BAD CG)
+byte motorOutput[] = {5, 9, 6, 10};   //version 1.1 configuration - GREEN BOARD (bad center of gravity)
 #define ATMEGA32u4
 #endif
 
+//  byte motorOutput[] = {[motor 1], [motor 2], [motor 3], [motor 4]}; 
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   
   #ifdef ATMEGA32u4
   DDRB = DDRB | B11110000; //sets pins D8, D9, D10, D11 as outputs
@@ -45,14 +48,14 @@ void setup() {
   DDRE = DDRE | B01000000; //sets pin D7 as output
   #endif
 
-  delay(2000); //give time for RX to get connection
+  delay(2000); //give time for RX to connect to remote
   initSbus();  //connect to the remote reciever (rx.cpp)
   initIMU();   //activate the imu and set gyroscope and accelerometer sensitivity (imu.cpp)
   /* 
    *  initilization and one time data collection about the enviornment 
-   * --> store information and use it to calibrate for flight
+   *          --> store information and use it to calibrate for flight
    *
-   *  
+   *          TBD
    */
 
 }
@@ -104,9 +107,12 @@ void loop() {
       writeMotor(3, 0);
     }
     
-    //printGUIData(); // used for GUI application
-    lastArmState = armState;
+    #ifdef PRINT_SERIALDATA
+      printSerial(); // used for GUI application
+    #endif
     
+    lastArmState = armState;
+   
 }
 
 
@@ -114,7 +120,9 @@ void writeMotor(int index, float value){
   analogWrite(motorOutput[index], (uint8_t)(value));
 }
  
-void printGUIData(){
+void printSerial(){
+
+/*
     Serial.print("s ");
     Serial.print(imu_angles().x);
     Serial.print(" ");
@@ -129,6 +137,12 @@ void printGUIData(){
     Serial.println(chYaw());
     //Serial.print(" ");
     //Serial.println(failsafeState());
+*/
+
+    Serial.print(imu_rates().x);
+    Serial.print(" ");   
+    Serial.println(imu_angles().x);
+
        
 
 }
