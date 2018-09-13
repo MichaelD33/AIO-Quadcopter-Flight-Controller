@@ -6,48 +6,43 @@
     // Integral term depends on accumulation of past errors
     // Derivative? --> maybe don't integrate because it is very suseptible to noise
 */
-#include <Arduino.h>
 #include "pid.h"
 #include "config.h"
 
 float outputX;
 float outputY;
 float outputZ;
-float throttleGain = 0.0023;
 float timeChange;
-long lastTime = 0;
+//float throttleGain = 0.0023;
 
+long lastTime = 0;
 
 axis_float_t desiredAngle;
 axis_float_t currentAngle;
-
 axis_float_t error, deltaError, errorSum, lastAngle;
 
 float_pwmOut motorSpeed;
 
 
 
+
 void initPids(){
   //time since last calculation
-            
-  if(armingState() != lastArmingState()){
-    //reset the integral term when the quadcopter is armed
-    //this should work b/c initPids() does not run when armState switches to false
-    errorSum.x = 0;
-    errorSum.y = 0;
-    errorSum.z = 0;
-  }else{
-    //do nothing
-  }
+  long presentTime = micros();  
+  timeChange = (float)(presentTime - lastTime);
   
-  long currentTime = micros();
-  timeChange = (float)(currentTime - lastTime);
-
 // if(timeChange >= PID_SAMPLETIME){ 
+ 
     computePids();
     resetPids();
+    lastAngle.x = currentAngle.x;
+    lastAngle.y = currentAngle.y;
+    lastAngle.z = currentAngle.z;    
+
 //  }
-  lastTime = currentTime;
+ 
+    lastTime = presentTime;
+    
 } 
     
 
@@ -55,25 +50,26 @@ void computePids(){
   
     desiredAngle.x = -1 * chRoll(); //read rotational rate data (°/s) from remote and set it to the desired angle
     desiredAngle.y = -1 * chPitch(); // FOR RATE MODE: consider using mod() to bring values back to 0 when it goes past 180 (if I change the equation to +=)
-    desiredAngle.z = -1 * chYaw();  // multiplied by -1 to flip output of the remote (because right motors need to turn on in order to move to the left - and vice versa)
+    desiredAngle.z = chYaw();  // multiplied by -1 to flip output of the remote (because right motors need to turn on in order to move to the left and vice versa)
 
     #ifdef HORIZON
       currentAngle.x = imu_angles().x; //read angle from IMU and set it to the current angle
       currentAngle.y = imu_angles().y;
-      currentAngle.z = 0; //need magnetometer for accurate Z reference - also using reference angle causes directional lock north.
+      currentAngle.z = imu_angles().z;
+      //currentAngle.z = 0;
     #endif
 
     #ifdef ACRO
       currentAngle.x = imu_rates().x; //read gyro rates from IMU and set it to the current angle
       currentAngle.y = imu_rates().y;
-      //currentAngle.z = imu_rates().z;
-      currentAngle.z = 0; //need magnetometer for accurate Z reference - also using reference angle causes directional lock north.
+      currentAngle.z = imu_rates().z;
+      //currentAngle.z = 0;
     #endif
     
     //compute all the working error vars
-    error.x =  desiredAngle.x - currentAngle.x;                 //present error
-    errorSum.x += error.x * timeChange;                         //integral of the error
-    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange; //derivative of the error
+    error.x =  desiredAngle.x - currentAngle.x;                     //present error
+    errorSum.x += error.x * timeChange;                             //integral of the error
+    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange;     //derivative of the error
     
     error.y =  desiredAngle.y - currentAngle.y;
     errorSum.y += error.y * timeChange;
@@ -115,25 +111,23 @@ void computePids(){
           Iz = MAX_INTEGRAL * -1;
         }
    
-    //compute PID output as a function of the throttle
-    outputX = (Px + Ix - Dx)*(chThrottle() * throttleGain);
-    outputY = (Py + Iy - Dy)*(chThrottle() * throttleGain);
-    outputZ = (Pz + Iz - Dz)*(chThrottle() * throttleGain); 
-
-    //write outputs to corresponding motors at the corresponding speed
+    //compute PID output 
+//    outputX = (Px + Ix - Dx)
+//    outputY = (Py + Iy - Dy)
+//    outputZ = (Pz + Iz - Dz)
     
+    //compute PID output as a function of the throttle
+    outputX = (Px + Ix - Dx)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
+    outputY = (Py + Iy - Dy)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
+    outputZ = (Pz + Iz - Dz)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
+    
+    //write outputs to corresponding motors at the corresponding speed
      motorSpeed.one = abs(chThrottle() + outputX - outputY - outputZ); 
      motorSpeed.two = abs(chThrottle() - outputX - outputY + outputZ); 
      motorSpeed.three = abs(chThrottle() - outputX + outputY - outputZ);
      motorSpeed.four = abs(chThrottle() + outputX + outputY + outputZ);
-     /*
-     motorSpeed.one = (chThrottle() + outputX - outputY - outputZ); 
-     motorSpeed.two = (chThrottle() - outputX - outputY + outputZ); 
-     motorSpeed.three = (chThrottle() - outputX + outputY - outputZ);
-     motorSpeed.four = (chThrottle() + outputX + outputY + outputZ);
-     */
      
-     //clamp the min and max output from the pid controller (to match the nedded 0-255 for pwm)
+     //clamp the min and max output from the pid controller (to match the needed 0-255 for pwm)
      if(motorSpeed.one > ESC_MAX){
         motorSpeed.one = ESC_MAX;  
        }else if (motorSpeed.one < ESC_MIN){
@@ -158,37 +152,25 @@ void computePids(){
         motorSpeed.four = ESC_MIN;
        }else{  } 
            
-    /*
-     Serial.print(outputX);
-     Serial.print(", "); 
-     Serial.print(outputY);
-     Serial.print(", "); 
-     Serial.print(outputZ);
-     Serial.print(", "); 
-     Serial.println(motorSpeed.one);
-     
-     Serial.print(motorSpeed.one);
-     Serial.print(", "); 
-     Serial.print(motorSpeed.two);
-     Serial.print(", "); 
-     Serial.print(motorSpeed.three);
-     Serial.print(", "); 
-     Serial.println(motorSpeed.four);
-    
-     Serial.print(Px);
-     Serial.print(", "); 
-     Serial.print(Ix);
-     Serial.print(", "); 
-     Serial.println(outputX);
-      */
 }
 
 void resetPids(){
-  
-    //store relevant variables
-    lastAngle.x = currentAngle.x;
-    lastAngle.y = currentAngle.y;
-    lastAngle.z = currentAngle.z;
+
+   if(chThrottle() < 10){
+    
+      errorSum.x = 0;
+      errorSum.y = 0;
+      errorSum.z = 0;   
+      
+    }else if(armingState() != lastArmingState()){
+    //reset the integral term when the quadcopter is armed
+    //this should work b/c initPids() does not run when armState switches to false
+    
+    errorSum.x = 0;
+    errorSum.y = 0;
+    errorSum.z = 0;
+    
+  }
        
 }
 
