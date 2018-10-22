@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <Math.h>
 #include <Wire.h>
 #include "imu.h"
@@ -96,11 +95,7 @@ median_filter_t accel_z_filter = median_filter_new(FILTER_COMPARISONS,0); //decl
 
  }
 
-void readIMU(){
-
-   delta_t = (float) (currentTime - previousTime) / 1000000;
-   
-  
+void readIMU(){     
    Wire.beginTransmission(MPU_ADDR);
    Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
    Wire.endTransmission(false);
@@ -112,8 +107,6 @@ void readIMU(){
    GyYRaw=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
    GyXRaw=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
    GyZRaw=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-
-// Serial.println(AcXRaw);
    
    processGyro();  
 
@@ -139,7 +132,13 @@ void processGyro(){
   gyroRates.x = (float)(GyXRaw - GYRO_X_OFFSET) / GYRO_SENS;
   gyroRates.z = (float)(GyZRaw - GYRO_Z_OFFSET) / GYRO_SENS;
 
-  processAcc();
+  #if defined(ACRO) || defined(AIR)
+    previousTime = currentTime;
+    currentTime = micros();
+  #else
+    processAcc();
+  #endif
+
   
 }
 
@@ -171,8 +170,8 @@ void processAcc(){
 //   roll = (atan2(accel_filtered.x, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 //   pitch = (atan2(accel_filtered.y, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 
-     roll = (atan2(accel_filtered.x, sqrt(sq(accel_filtered.y)+sq(accel_filtered.z)))*180)/M_PI; 
-     pitch = (atan2(accel_filtered.y, sqrt(sq(accel_filtered.x)+sq(accel_filtered.z)))*180)/M_PI; 
+    roll = (atan2(accel_filtered.x, sqrt(sq(accel_filtered.y)+sq(accel_filtered.z)))*180)/M_PI; 
+    pitch = (atan2(accel_filtered.y, sqrt(sq(accel_filtered.x)+sq(accel_filtered.z)))*180)/M_PI; 
 
      imuCombine();
      
@@ -185,6 +184,7 @@ void imuCombine(){
    angle.x = GYRO_PART * (angle.x + (gyroRates.y * delta_t)) + (1-GYRO_PART) * roll;
    angle.z = (gyroRates.z * delta_t);
 //   angle.z = (angle.z + (gyroRates.z * delta_t)); //causes directional lock according to the direction faced by the quadcopter during startup (basically a magnetometer w/out accurate North reference)
+
 /*
    Serial.print("X: ");
    Serial.print(angle.x);
@@ -193,7 +193,7 @@ void imuCombine(){
    Serial.print("    Z: ");
    Serial.println(angle.z);
 */   
-
+   delta_t = (float) (currentTime - previousTime) / 1000000;
    previousTime = currentTime;
    currentTime = micros();
 }
