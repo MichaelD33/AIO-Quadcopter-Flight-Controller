@@ -2,7 +2,6 @@
 #ifndef IMU_h_
 #define IMU_h_
 
-#include <Arduino.h>
 #include "config.h"
 #include "MedianFilter.h"
 
@@ -14,7 +13,7 @@
   #define MPU_ADDR 0x69
 #endif
 
-axis_float_t imu_rates();
+axis_int16_t imu_rates();
 axis_float_t imu_angles();
 axis_float_t imu_gyro_angles();
 axis_float_t imu_accel_filtered();
