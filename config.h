@@ -4,13 +4,14 @@
 
 /* Define Parameters */
 
-//  #define PRINT_SERIALDATA
+  #define PRINT_SERIALDATA
 
 /* ----------------------------------------------FLIGHT CONTROLLER BOARD CONFIG------------------------------------------------ */
  
-//  #define AIO_v1
-//    #define AIO_v2
-    #define AIO_v3
+//  #define AIO_v01
+    #define AIO_v03
+//  #define AIO_v04
+//  #define AIO_v041
 //  #define 328
 //  #define ATMEGA32u4
 
@@ -24,7 +25,7 @@
 
 //  STABILIZATION MODE
 //    #define ACRO                      
-//  #define AIR                      //  TBD
+//  #define AIR                      //  WORK IN PROGRESS
     #define HORIZON                
 //  #define ANGLE                    //  TBD
 
@@ -43,8 +44,8 @@
 //  #define MPU6050_69
 //  #define MPU6050_68
 //  #define MPU6000                       //  TBD
-//  #define MPU6500_SPI                   //  WIP
-//  #define MPU9250_SPI                   //  WIP
+//  #define MPU6500_SPI                   //  TBD
+//  #define MPU9250_SPI                   //  TBD
 //  #define MPU6500_I2C                   //  TBD
 //  #define MPU9250_I2C                   //  TBD
 
@@ -53,7 +54,13 @@
 //   #define I2C_STANDARD
 //   #define SPI  
 
-/*  IMU OFFSET CONFIGURATION
+     #define IMU_SAMPLING_FREQUENCY 3000
+     #define I2C_FASTMODE
+
+     #define DIGITAL_LOW_PASS_FILTER //comment this line out to deactivate the MPU6050 digital low pass filter 
+//    #define DLPF_BANDWIDTH 3  // filtration bandwith configuration (coming soon)
+
+/*  IMU OFFSET CONFIGURATION -- CONFIGURED BELOW WITHIN SPECIFIC FLIGHT CONTROLLER VERSIONS
     #define ACCEL_X_OFFSET (0.0)
     #define ACCEL_Y_OFFSET (0.0)
     #define ACCEL_Z_OFFSET (0.0)
@@ -71,9 +78,24 @@
 //   #define ACC_SENSITIVITY_16G
 
 //    #define GYRO_SENSITIVITY_250
+        #ifdef GYRO_SENSITIVITY_250
+          #define GYRO_SENS 131
+        #endif
+        
       #define GYRO_SENSITIVITY_500
+        #ifdef GYRO_SENSITIVITY_500
+          #define GYRO_SENS 65.6
+        #endif
+        
 //    #define GYRO_SENSITIVITY_1000
+        #ifdef GYRO_SENSITIVITY_1000
+          #define GYRO_SENS 32.8
+        #endif
+        
 //    #define GYRO_SENSITIVITY_2000
+        #ifdef GYRO_SENSITIVITY_2000
+         #define GYRO_SENS 16.4
+       #endif     
     
     #define ACC_PART (1.0 - GYRO_PART)
     #define GYRO_PART 0.975
@@ -82,8 +104,8 @@
 
 /* ----------------------------------------AIO PROTOTYPE FLIGHT CONTROLLER CONFIGURATION----------------------------------------------------- */
 
-#ifdef AIO_v2
-/*    VERSION 2     */
+#ifdef AIO_v03
+/*    VERSION 0.3     */
     #define ACCEL_X_OFFSET (1630.0)
     #define ACCEL_Y_OFFSET (-1359.0)
     #define ACCEL_Z_OFFSET (869.0)
@@ -91,29 +113,36 @@
     #define GYRO_X_OFFSET (16.0)
     #define GYRO_Y_OFFSET (26.0)
     #define GYRO_Z_OFFSET (40.0)
-
-    #define DIGITAL_LOW_PASS_FILTER //comment this line out to deactivate the MPU6050 digital low pass filter 
-    #define DLPF_BANDWIDTH 3  // filtration bandwith configuration (coming soon)
     
     #define MPU6050_69
        
 #endif
 
-
-#ifdef AIO_v3
-/*    VERSION 3       */
+#ifdef AIO_v04
+/*    VERSION 0.4    7x16mm Motors   
     #define ACCEL_X_OFFSET (-1822.0)
     #define ACCEL_Y_OFFSET (-2715.0)
     #define ACCEL_Z_OFFSET (853.0)
 
     #define GYRO_X_OFFSET (32.0)
     #define GYRO_Y_OFFSET (-86.0)
-    #define GYRO_Z_OFFSET (-12.0)
+    #define GYRO_Z_OFFSET (-12.0) 
+*/
 
-    #define DIGITAL_LOW_PASS_FILTER //comment this line out to deactivate the MPU6050 digital low pass filter 
-    #define DLPF_BANDWIDTH 3  // filtration bandwith configuration (coming soon)
+    /*    VERSION 0.4.1    7x20mm Motors   */
+    #define ACCEL_X_OFFSET (2228.0)
+    #define ACCEL_Y_OFFSET (2736.0)
+    #define ACCEL_Z_OFFSET (1258.0)
+
+    #define GYRO_X_OFFSET (101.0)
+    #define GYRO_Y_OFFSET (-37.0)
+    #define GYRO_Z_OFFSET (0.0)
 
     #define MPU6050_68
+#endif
+
+#ifdef AIO_v041
+    
   
 #endif
 
@@ -139,6 +168,8 @@
 /* ---------------------------------------------PID CONTROLLER CONFIGURATION------------------------------------------------------------ */
   
 //  integral clamping to avoid writing values outside the range of pwm output
+
+    #define PID_SAMPLETIME
     #define MAX_INTEGRAL 230
 
 
