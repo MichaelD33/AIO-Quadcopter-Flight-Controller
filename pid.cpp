@@ -17,7 +17,7 @@ float timeChange;
 
 long lastTime = 0;
 
-axis_float_t desiredAngle;
+axis_int16_t desiredAngle;
 axis_float_t currentAngle;
 axis_float_t error, deltaError, errorSum, lastAngle;
 
@@ -28,29 +28,17 @@ float_pwmOut motorSpeed;
 
 void initPids(){
   //time since last calculation
-  long presentTime = micros();  
-  timeChange = (float)(presentTime - lastTime);
-  
-// if(timeChange >= PID_SAMPLETIME){ 
  
     computePids();
     resetPids();
     lastAngle.x = currentAngle.x;
     lastAngle.y = currentAngle.y;
-    lastAngle.z = currentAngle.z;    
-
-//  }
- 
-    lastTime = presentTime;
+    lastAngle.z = currentAngle.z;
     
 } 
     
 
 void computePids(){
-  
-    desiredAngle.x = -1 * chRoll(); //read rotational rate data (°/s) from remote and set it to the desired angle
-    desiredAngle.y = -1 * chPitch(); // FOR RATE MODE: consider using mod() to bring values back to 0 when it goes past 180 (if I change the equation to +=)
-    desiredAngle.z = chYaw();  // multiplied by -1 to flip output of the remote (because right motors need to turn on in order to move to the left and vice versa)
 
     #ifdef HORIZON
       currentAngle.x = imu_angles().x; //read angle from IMU and set it to the current angle
@@ -60,39 +48,51 @@ void computePids(){
     #endif
 
     #ifdef ACRO
-      currentAngle.x = imu_rates().x; //read gyro rates from IMU and set it to the current angle
-      currentAngle.y = imu_rates().y;
-      currentAngle.z = imu_rates().z;
+      currentAngle.x = imu_rates().x / GYRO_SENS; //read gyro rates from IMU and set it to the current angle
+      currentAngle.y = imu_rates().y / GYRO_SENS;
+      currentAngle.z = imu_rates().z / GYRO_SENS;
       //currentAngle.z = 0;
     #endif
     
-    //compute all the working error vars
-    error.x =  desiredAngle.x - currentAngle.x;                     //present error
-    errorSum.x += error.x * timeChange;                             //integral of the error
-    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange;     //derivative of the error
+    // compute all the working error vars
+    // read rotational rate data (°/s) from remote and set it to the desired angle
+    // FOR RATE MODE: consider using mod() to bring values back to 0 when it goes past 180 (if I change the equation to +=)
     
-    error.y =  desiredAngle.y - currentAngle.y;
-    errorSum.y += error.y * timeChange;
-    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange; 
+    error.x = (-1 * chRoll()) - currentAngle.x;        //present error
+    errorSum.x += error.x;                             //integral of the error
+    deltaError.x = currentAngle.x - lastAngle.x;       //derivative of the error
+    
+    error.y = (-1 * chPitch()) - currentAngle.y;
+    errorSum.y += error.y;
+    deltaError.x = currentAngle.x - lastAngle.x; 
 
-    error.z =  desiredAngle.z - currentAngle.z;
+    error.z = chYaw() - currentAngle.z;
     errorSum.z += error.z * timeChange;
-    deltaError.z = (currentAngle.z - lastAngle.z) / timeChange; 
+    deltaError.z = currentAngle.z - lastAngle.z; 
+ 
 
+/*
     //compute proportional
     float Px = KpX * error.x;
     float Py = KpY * error.y;
     float Pz = KpZ * error.z;
 
-    //compute integral
-    float Ix = KiX * errorSum.x;
-    float Iy = KiY * errorSum.y;
-    float Iz = KiZ * errorSum.z;
-
     //compute derivative
     float Dx = KdX * deltaError.x;
     float Dy = KdY * deltaError.y;
     float Dz = KdZ * deltaError.z;
+       
+    //compute PID output 
+    outputX = (Px + Ix - Dx);
+    outputY = (Py + Iy - Dy);
+    outputZ = (Pz + Iz - Dz);
+*/
+
+
+    //compute integral
+    float Ix = KiX * errorSum.x;
+    float Iy = KiY * errorSum.y;
+    float Iz = KiZ * errorSum.z;
 
     //clamp the range of integral values
         if(Ix > MAX_INTEGRAL){ 
@@ -110,17 +110,25 @@ void computePids(){
         }else if (Iz < (MAX_INTEGRAL * -1)){
           Iz = MAX_INTEGRAL * -1;
         }
-   
-    //compute PID output 
-//    outputX = (Px + Ix - Dx)
-//    outputY = (Py + Iy - Dy)
-//    outputZ = (Pz + Iz - Dz)
-    
+
+    outputX = (KpX * error.x + Ix - KdX * deltaError.x);
+    outputY = (KpY * error.y + Iy - KdY * deltaError.y);
+    outputZ = (KpZ * error.z + Iz - KdZ * deltaError.z);
+
+/*
+    //removed integral clamping
+    outputX = (KpX * error.x + KiX * errorSum.x - KdX * deltaError.x);
+    outputY = (KpY * error.y + KiY * errorSum.y - KdY * deltaError.y);
+    outputZ = (KpZ * error.z + KiZ * errorSum.z - KdZ * deltaError.z);
+
+
     //compute PID output as a function of the throttle
-    outputX = (Px + Ix - Dx)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
-    outputY = (Py + Iy - Dy)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
-    outputZ = (Pz + Iz - Dz)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
-    
+    outputX = (KpX * error.x + Ix - KdX * deltaError.x)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
+    outputY = (KpY * error.y + Iy - KdY * deltaError.y)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
+    outputZ = (KpZ * error.z + Iz - KdZ * deltaError.z)*(chThrottle() / (ESC_MAX * ESC_TOLERANCE));
+*/
+ 
+  
     //write outputs to corresponding motors at the corresponding speed
      motorSpeed.one = abs(chThrottle() + outputX - outputY - outputZ); 
      motorSpeed.two = abs(chThrottle() - outputX - outputY + outputZ); 
