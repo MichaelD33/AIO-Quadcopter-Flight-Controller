@@ -9,37 +9,37 @@
 #include "pid.h"
 #include "config.h"
 
-float outputX;
-float outputY;
-float outputZ;
-float timeChange;
 //float throttleGain = 0.0023;
-
-long lastTime = 0;
+float outputX, outputY, outputZ;
+unsigned long lastTime, currentT;
 
 axis_int16_t desiredAngle;
-axis_float_t currentAngle;
-axis_float_t error, deltaError, errorSum, lastAngle;
+axis_float_t currentAngle, lastAngle;
+axis_float_t error, deltaError, errorSum;
 
-float_pwmOut motorSpeed;
-
-
-
+int_pwmOut motorSpeed;
 
 void initPids(){
   //time since last calculation
- 
+    
     computePids();
     resetPids();
     lastAngle.x = currentAngle.x;
     lastAngle.y = currentAngle.y;
     lastAngle.z = currentAngle.z;
-    
+    lastTime = currentT;
 } 
     
 
 void computePids(){
 
+    #ifndef LOOP_SAMPLING
+      currentT = micros();
+      float timeChange = (float) (currentT - lastTime);
+    #else
+      //do nothing?
+    #endif
+    
     #ifdef HORIZON
       currentAngle.x = imu_angles().x; //read angle from IMU and set it to the current angle
       currentAngle.y = imu_angles().y;
@@ -57,38 +57,31 @@ void computePids(){
     // compute all the working error vars
     // read rotational rate data (°/s) from remote and set it to the desired angle
     // FOR RATE MODE: consider using mod() to bring values back to 0 when it goes past 180 (if I change the equation to +=)
-    
-    error.x = (-1 * chRoll()) - currentAngle.x;        //present error
-    errorSum.x += error.x;                             //integral of the error
-    deltaError.x = currentAngle.x - lastAngle.x;       //derivative of the error
-    
+
+    error.x = (-1 * chRoll())  - currentAngle.x;                      //present error
     error.y = (-1 * chPitch()) - currentAngle.y;
-    errorSum.y += error.y;
-    deltaError.x = currentAngle.x - lastAngle.x; 
+    error.z = chYaw()          - currentAngle.z;
 
-    error.z = chYaw() - currentAngle.z;
+    #ifndef LOOP_SAMPLING
+    errorSum.x += error.x * timeChange;                               //integral of error
+    errorSum.y += error.y * timeChange;
     errorSum.z += error.z * timeChange;
+    
+    deltaError.x = (currentAngle.x - lastAngle.x) / timeChange;       //derivative of error
+    deltaError.y = (currentAngle.y - lastAngle.y) / timeChange; 
+    deltaError.z = (currentAngle.z - lastAngle.z) / timeChange; 
+   
+    #else
+    
+    errorSum.x += error.x;                              //integral of error
+    errorSum.y += error.y;
+    errorSum.z += error.z;
+    
+    deltaError.x = currentAngle.x - lastAngle.x;        //derivative of error
+    deltaError.y = currentAngle.y - lastAngle.y; 
     deltaError.z = currentAngle.z - lastAngle.z; 
- 
-
-/*
-    //compute proportional
-    float Px = KpX * error.x;
-    float Py = KpY * error.y;
-    float Pz = KpZ * error.z;
-
-    //compute derivative
-    float Dx = KdX * deltaError.x;
-    float Dy = KdY * deltaError.y;
-    float Dz = KdZ * deltaError.z;
-       
-    //compute PID output 
-    outputX = (Px + Ix - Dx);
-    outputY = (Py + Iy - Dy);
-    outputZ = (Pz + Iz - Dz);
-*/
-
-
+    #endif
+    
     //compute integral
     float Ix = KiX * errorSum.x;
     float Iy = KiY * errorSum.y;
@@ -182,21 +175,8 @@ void resetPids(){
        
 }
 
-float_pwmOut motorPwmOut(){
+int_pwmOut motorPwmOut(){
   //allows me to return all four speeds in one method
   return motorSpeed;
 }
 
-/*
-void setSampleTime(int NewSampleTime)
-{
-   if (NewSampleTime > 0)
-   {
-      double ratio  = (double)NewSampleTime
-                      / (double)SampleTime;
-      ki *= ratio;
-      kd /= ratio;
-      SampleTime = (unsigned long)NewSampleTime;
-   }
-}
-*/
