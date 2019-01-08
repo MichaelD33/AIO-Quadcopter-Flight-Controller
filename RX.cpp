@@ -19,7 +19,7 @@ void readRx(){
     sBus.FeedLine();
     if (sBus.toChannels == 1){
       sBus.UpdateChannels();
-      sBus.toChannels = 0;
+      sBus.toChannels = 0; 
 
      //assign receieved remote controller values to variables
       throttleRx = sBus.channels[0];
@@ -34,21 +34,26 @@ void readRx(){
       
       failsafe = sBus.failsafe_status;
 
-     //map gimbals to outputs       
-      throttleRx = mapFloat(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
+//  Map gimbals values to desired outputs
+      #ifdef MAP_THROTTLE_FLOAT
+        throttleRx = mapFloat(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
+      #else
+        throttleRx = map(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
+      #endif
+      
       rollRx = map(rollRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
       pitchRx = map(pitchRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
       yawRx = map(yawRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
-
      
-    //FIX SUPER RATE MAPPING
+//    FIX SUPER RATE MAPPING
+    /*
       throttleRate = pow(throttleRx, 2.2);
-//    rollRate = pow(rollRx, );
-//    pitchRate = pow(pitchRx, );
-//    yawRate = pow(yawRx, );
-
+      rollRate = pow(rollRx, );
+      pitchRate = pow(pitchRx, );
+      yawRate = pow(yawRx, );
+    */
      
-    //map switches to appropriate values
+//    map switches to appropriate values
       swA = map(swA, MINTHROTTLE, MAXTHROTTLE, 0, 2);
       swB = map(swB, MINTHROTTLE, MAXTHROTTLE, 0, 2);
       swC = map(swC, MINTHROTTLE, MAXTHROTTLE, 0, 2);
