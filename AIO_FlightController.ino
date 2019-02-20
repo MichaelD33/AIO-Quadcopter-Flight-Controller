@@ -1,6 +1,6 @@
 /*
  *  AIO_FlightController - An integrated quadcopter flight controller program for the Arduino platform.
- *  Copyright © 2018 Michael Delaney. All rights reserved.
+ *  Copyright © 2018-2019 Michael Delaney. All rights reserved.
  * 
  *  This device takes data from an inertial measurement unit about its orientation and from an external remote about 
  *  the desired change in position to the system and makes several calculations to adjust to said position by varying 
@@ -24,7 +24,7 @@ bool lastArmState = false;
 #ifdef LOOP_SAMPLING
   int imuLastStart, pidLastStart, printStartTime, imuStartTime, pidStartTime;
 //  int pidTime, rxTime, imuTime;  
-  long loopEnd;
+  long loopEnd, timestart;
 #endif
 
 #ifdef AIO_v01
@@ -33,17 +33,19 @@ bool lastArmState = false;
 #endif
 
 #ifdef AIO_v03
-  byte motorOutput[] = {5, 9, 6, 10};   //version 0.3 configuration - GREEN BOARD
+  byte motorOutput[] = {5, 9, 6, 10};   //version 0.3 configuration - GREEN BOARD (purple frame)
+//  byte motorOutput[] = {6, 10, 5, 9};   //version 0.3 configuration - GREEN BOARD (purple frame)
+
   #define ATMEGA32u4
 #endif
 
 #ifdef AIO_v04
-  byte motorOutput[] = {10, 9, 13, 6}; //version 0.4 configuration - RED BOARD
+  byte motorOutput[] = {10, 9, 13, 6}; //version 0.4 configuration - RED PCB (legacy)
   #define ATMEGA32u4
 #endif
 
 #ifdef AIO_v041
-  byte motorOutput[] = {10, 9, 5, 6};  //version 0.4.1
+  byte motorOutput[] = {10, 9, 5, 6};  //version 0.4.1 configuration — Updated RED PCB - Professionally Made RED Frame
   #define ATMEGA32u4
 #endif
 
@@ -72,16 +74,17 @@ void setup() {
 void loop() {
 
   #ifdef LOOP_SAMPLING  
-    long timestart = micros();            
+    timestart = micros();            
        
     while((micros() + ((loopEnd - imuLastStart) + timestart)) < IMU_SAMPLING_FREQUENCY){
       //do nothing
       imuStartTime = (micros() - timestart);
-    }    
+    } 
    #endif
     
 // IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
+
 //   imuTime = (micros() - timestart) - imuStartTime;    
      
    readRx();  //read the remote and convert data to a rotational rate of ±180°/s (rx.cpp)
@@ -94,25 +97,21 @@ void loop() {
           armState = false; break;
        
         case 1: //if the arm switch is set to 1, start the PID calculation
-          armState = true;
           
           #ifdef LOOP_SAMPLING
             while((micros() + ((loopEnd - pidLastStart) + timestart)) < PID_SAMPLETIME){
                 //do nothing
                 pidStartTime = (micros() - timestart);
             }     
-          
-           
-//            pidStartTime = micros() - timestart;
+                
             initPids();   //start PID calcuation (pid.cpp)
 //            pidTime = (micros() - timestart) - (pidStartTime);
           #else
             initPids();   //start PID calcuation (pid.cpp)
           #endif
           
-            //if( ( abs(imu_angles().x) < 20 && abs(imu_angles().y) < 20 ) || armState == lastArmState){
-               //only activate motors if angle is less than 20°
-               
+            //if((abs(imu_angles().x) < 20 && abs(imu_angles().y) < 20 ) || armState == lastArmState){
+               //only activate motors if angle is less than 20° 
               /*
              #ifdef LOOP_SAMPLING
              
@@ -122,7 +121,7 @@ void loop() {
                
              #endif 
                */
-
+                              
                    writeMotor(0, motorPwmOut().one);   //PWM motor 1
                    writeMotor(1, motorPwmOut().two);   //PWM motor 2
                    writeMotor(2, motorPwmOut().three); //PWM motor 3
@@ -152,7 +151,6 @@ void loop() {
     }
     
     lastArmState = armState;
-
 
     #ifdef LOOP_SAMPLING
       printStartTime = (micros() - timestart);
@@ -186,8 +184,10 @@ int lastArmingState(){
   
 void printSerial(){
 
-/*
-    Serial.print("s ");
+  #ifdef GUI_ENABLED
+    Serial.print("$ ");
+//    Serial.print(cycles); // add number of loops
+//    Serial.print(" ");
     Serial.print(imu_angles().x);
     Serial.print(" ");
     Serial.print(imu_angles().y);
@@ -199,54 +199,90 @@ void printSerial(){
     Serial.print(chPitch());
     Serial.print(" ");
     Serial.println(chYaw());
-    //Serial.print(" ");
+    Serial.print(" ");
     Serial.println(failsafeState());
-*/
+  #endif
 
-    #ifdef FULL_PROCESS_DEBUG
-      Serial.print(imu_rates().x);
-      Serial.print("\t|\t");   
-      Serial.print(imu_angles().x);
-      Serial.print("\t|\t");   
+  #ifdef FULL_PROCESS_DEBUG
+    
+    Serial.print(imu_angles().x);
+    Serial.print(", ");   
+    Serial.print(imu_angles().y);
+    Serial.print(", ");   
+    Serial.print(imu_angles().z);
+    Serial.print("\t");   
+
+    if(failsafeState() == 0){
+      Serial.print("REMOTE ACTIVE — ");
+      Serial.print(chRoll());
+    }else if(failsafeState() == 1){
+      Serial.print("SIGNAL LOST");        
+    }else if(failsafeState() == 3){
+      Serial.print("FAILSAFE ENGAGED");
+    }else{
+      Serial.print("REMOTE ERROR!");
+    }
+
+    Serial.print("\n");
+
+  /*
+    Serial.print(", ");
+    Serial.print(imu_rates().x);
+    Serial.print(", ");
+    Serial.print(imu_rates().y);
+    Serial.print(", ");
+    Serial.print(imu_rates().z);
+
+    if(failsafeState() == 0){
+      Serial.print("REMOTE ACTIVE — ");
+      Serial.print(chRoll());
+    }else if(failsafeState() == 1){
+      Serial.print("SIGNAL LOST");        
+    }else if(failsafeState() == 3){
+      Serial.print("FAILSAFE ENGAGED");
+    }else{
+      Serial.print("REMOTE ERROR!");
+    }
+   
+    Serial.print(outputX);   
+    Serial.print(", ");
+    Serial.print(outputY);  
+    Serial.print(", ");   
+    Serial.print(outputZ);
+    Serial.print("\n"); 
+    */
+     
+
+//  Motor speeds can be determined using above PID output data (and throttle)
+  /*
+    Serial.print(", ");     
+    Serial.print(motorPwmOut().one);
+    Serial.print(", ");
+    Serial.print(motorPwmOut().two);
+    Serial.print(", ");
+    Serial.print(motorPwmOut().three);
+    Serial.print(", ");
+    Serial.print(motorPwmOut().four);
+  */
+  
+  #endif
       
-      if(failsafeState() == 0){
-        Serial.print("REMOTE ACTIVE — ");
-        Serial.print(chRoll());
-      }else if(failsafeState() == 1){
-        Serial.print("SIGNAL LOST");        
-      }else if(failsafeState() == 3){
-        Serial.print("FAILSAFE ENGAGED");
-      }else{
-        Serial.print("REMOTE ERROR!");
-      }
-
-      /* add PID
-      Serial.print("\t|\t");   
-      Serial.print(outputX);  */
-      Serial.print("\t|\t");   
-      Serial.println(motorPwmOut().one);
-      
-    #endif
-
-       
 }
 
 
 void profileLoop(){
 
   #ifdef LOOP_SAMPLING
-//      Serial.print("IMU Start: ");
+      Serial.print(timestart);
+      Serial.print(", ");
       Serial.print(imuStartTime);
-      Serial.print("\t");
-//      Serial.print("\tPID Start: ");
+      Serial.print(", ");
       Serial.print(pidStartTime);
-      Serial.print("\t");
-//      Serial.print("\tPrint Start: ");
+      Serial.print(", ");
       Serial.print(printStartTime);
-      Serial.print("\t");
-//      Serial.print("\tPrev. Loop End: ");
+      Serial.print(", ");
       Serial.print(loopEnd);
-      Serial.print("\t");
+      Serial.print("\n");
 /*        
 //      Serial.print("\tIMU: ");
       Serial.print(imuTime);
