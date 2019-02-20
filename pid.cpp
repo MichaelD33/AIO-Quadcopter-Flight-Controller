@@ -33,11 +33,11 @@ void initPids(){
 
 void computePids(){
 
-    #ifndef LOOP_SAMPLING
+    #ifdef LOOP_SAMPLING
+      
+    #else
       currentT = micros();
       float timeChange = (float) (currentT - lastTime);
-    #else
-      //do nothing?
     #endif
     
     #ifdef HORIZON
@@ -48,15 +48,14 @@ void computePids(){
     #endif
 
     #ifdef ACRO
-      currentAngle.x = imu_rates().x / GYRO_SENS; //read gyro rates from IMU and set it to the current angle
-      currentAngle.y = imu_rates().y / GYRO_SENS;
-      currentAngle.z = imu_rates().z / GYRO_SENS;
+      currentAngle.x = imu_rates().x; //read gyro rates from IMU and set it to the current angle
+      currentAngle.y = imu_rates().y;
+      currentAngle.z = imu_rates().z;
       //currentAngle.z = 0;
     #endif
     
     // compute all the working error vars
     // read rotational rate data (°/s) from remote and set it to the desired angle
-    // FOR RATE MODE: consider using mod() to bring values back to 0 when it goes past 180 (if I change the equation to +=)
 
     error.x = (-1 * chRoll())  - currentAngle.x;                      //present error
     error.y = (-1 * chPitch()) - currentAngle.y;
@@ -72,7 +71,6 @@ void computePids(){
     deltaError.z = (currentAngle.z - lastAngle.z) / timeChange; 
    
     #else
-    
     errorSum.x += error.x;                              //integral of error
     errorSum.y += error.y;
     errorSum.z += error.z;
