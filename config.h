@@ -7,18 +7,21 @@
 /* -------------------------------------------------------DEBUGGING------------------------------------------------------------ */
 
   #define PRINT_SERIALDATA     // outputs any specified data to the serial monitor for debugging
-      #define FULL_PROCESS_DEBUG   // outputs critical data from each function to ensure proper functionality —— PRINT_SERIALDATA MUST BE ENABLED
-
-//  #define LOOP_SAMPLING      // enables loop sampling for fixed PID and IMU sampling rates as well as loop time profiling
+//    #define FULL_PROCESS_DEBUG   // outputs critical data from each function to ensure proper functionality —— PRINT_SERIALDATA MUST BE ENABLED
+//    #define IMU_RAW_DEBUG
+    
+//  #define GUI_ENABLED        // enables output to MATLAB GUI application over serial
 //  #define MAP_THROTTLE_FLOAT // maps throttle value between 0 and 255 as a float for more precision
 
+  #define TIMEPROFILING        // outputs time breakdown for program processes
+//    #define LOOP_SAMPLING      // enables loop sampling for fixed PID and IMU sampling rates as well as loop time profiling
 
 /* ----------------------------------------------FLIGHT CONTROLLER BOARD CONFIG------------------------------------------------ */
  
 //  #define AIO_v01   // LEGACY
-    #define AIO_v03   // Green PCB (no +5V)
+//  #define AIO_v03   // Green PCB (no +5V)
 //  #define AIO_v04   // Red PCB
-//  #define AIO_v041  // Updated Red PCB with Protection Diodes
+    #define AIO_v041  // Updated Red PCB with Protection Diodes
 //  #define 328
 //  #define ATMEGA32u4
 
@@ -51,6 +54,7 @@
 
     #ifdef LOOP_SAMPLING
       #define PID_SAMPLETIME 5000 //define PID sample time at a frequency of 5000µs
+      #define IMU_SAMPLETIME 5000
     #endif
     
     #define MAX_INTEGRAL 230  //  integral clamping to avoid writing values outside the range of pwm output
@@ -166,13 +170,13 @@
 
 #ifdef AIO_v041
     /*    VERSION 0.4.1    7x20mm Motors   */
-    #define ACCEL_X_OFFSET (0)
-    #define ACCEL_Y_OFFSET (0)
-    #define ACCEL_Z_OFFSET (0)
+    #define ACCEL_X_OFFSET (1001)
+    #define ACCEL_Y_OFFSET (316)
+    #define ACCEL_Z_OFFSET (1274)
 
-    #define GYRO_X_OFFSET (0)
-    #define GYRO_Y_OFFSET (0)
-    #define GYRO_Z_OFFSET (0)
+    #define GYRO_X_OFFSET (42)
+    #define GYRO_Y_OFFSET (10)
+    #define GYRO_Z_OFFSET (25)
 
     #define MPU6050_68
   
