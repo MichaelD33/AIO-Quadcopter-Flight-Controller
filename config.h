@@ -1,3 +1,4 @@
+#pragma once
 #ifndef CONFIG_h
 #define CONFIG_h
 #include "stdint.h"
@@ -6,22 +7,20 @@
 
 /* -------------------------------------------------------DEBUGGING------------------------------------------------------------ */
 
-  #define PRINT_SERIALDATA     // outputs any specified data to the serial monitor for debugging
+//  #define PRINT_SERIALDATA     // outputs any specified data to the serial monitor for debugging
 //    #define FULL_PROCESS_DEBUG   // outputs critical data from each function to ensure proper functionality —— PRINT_SERIALDATA MUST BE ENABLED
-//    #define IMU_RAW_DEBUG
-    
-//  #define GUI_ENABLED        // enables output to MATLAB GUI application over serial
-//  #define MAP_THROTTLE_FLOAT // maps throttle value between 0 and 255 as a float for more precision
+//    #define IMU_RAW_DEBUG   
+//    #define GUI_ENABLED        // enables output to MATLAB GUI application over serial
 
-  #define TIMEPROFILING        // outputs time breakdown for program processes
+//  #define TIMEPROFILING        // outputs breakdown of loop timing to serial monitor
 //    #define LOOP_SAMPLING      // enables loop sampling for fixed PID and IMU sampling rates as well as loop time profiling
 
 /* ----------------------------------------------FLIGHT CONTROLLER BOARD CONFIG------------------------------------------------ */
  
 //  #define AIO_v01   // LEGACY
-//  #define AIO_v03   // Green PCB (no +5V)
+//    #define AIO_v03   // Green PCB (no +5V)
 //  #define AIO_v04   // Red PCB
-    #define AIO_v041  // Updated Red PCB with Protection Diodes
+    #define AIO_v041  // Updated Red PCB with ProMtection Diodes (Red Shapeways Frame)
 //  #define 328
 //  #define ATMEGA32u4
 
@@ -34,7 +33,7 @@
 //  #define TRI
 
 //  STABILIZATION MODE
-//    #define ACRO                      
+//  #define ACRO                      
 //  #define AIR                      //  WORK IN PROGRESS (ACRO with motors always on?)
     #define HORIZON                
 //  #define ANGLE                    //  TBD
@@ -43,7 +42,7 @@
 
 //  SPEED CONTROLLER TYPE
     #define BRUSHED
-//  #define BRUSHLESS                //  (brushless implementation still in development)
+//  #define BRUSHLESS                //  TBD
 
 // SPEED CONTROLLER CONFIG
     #define ESC_TOLERANCE 0.9        // THROTTLE MAX = (ESC_MAX * ESC_TOLERANCE)
@@ -94,8 +93,6 @@
     #define GYRO_Z_OFFSET (0.0)
 */
 
-/* -----------------------------------------------------SENSITIVITY------------------------------------------------------------- */
-
      #define ACC_SENSITIVITY_2G
 //     #define ACC_SENSITIVITY_4G
 //     #define ACC_SENSITIVITY_8G
@@ -129,7 +126,7 @@
 /* ---------------------------------------AIO PROTOTYPE FLIGHT CONTROLLER CONFIGURATION-------------------------------------------- */
 
 #ifdef AIO_v03
-/*    VERSION 0.3  ***OLD VERSION***   3D Printed Frame v1
+/*    VERSION 0.3  ***OLD VERSION***   Orange Bottom Mount 3D Printed Frame — v1
     #define ACCEL_X_OFFSET (1630.0)
     #define ACCEL_Y_OFFSET (-1359.0)
     #define ACCEL_Z_OFFSET (869.0)
@@ -141,7 +138,7 @@
     #define MPU6050_69  
 */
 
-/*    VERSION 0.3   3D Printed Frame v2 && 7x20mm Motors   */
+/*    VERSION 0.3   Purple 3D Printed Frame v2 && 7x20mm Motors   */
     #define ACCEL_X_OFFSET (2189.0)
     #define ACCEL_Y_OFFSET (2770.0)
     #define ACCEL_Z_OFFSET (1100.0)
@@ -155,7 +152,7 @@
 #endif
 
 #ifdef AIO_v04
-/*    VERSION 0.4    7x16mm Motors   */
+/*    VERSION 0.4    7x16mm Motors  — Bare Red PCB Version            */
     #define ACCEL_X_OFFSET (-1822.0)
     #define ACCEL_Y_OFFSET (-2715.0)
     #define ACCEL_Z_OFFSET (853.0)
@@ -169,7 +166,7 @@
 #endif
 
 #ifdef AIO_v041
-    /*    VERSION 0.4.1    7x20mm Motors   */
+    /*    VERSION 0.4.1    7x20mm Motors   — Red Shapeways Frame      */
     #define ACCEL_X_OFFSET (1001)
     #define ACCEL_Y_OFFSET (316)
     #define ACCEL_Z_OFFSET (1274)
@@ -187,6 +184,7 @@
 //  TRANSMITTER GIMBAL/SWITCH OUTPUT VALUES
     #define MINTHROTTLE 172 //minmum throttle output
     #define MAXTHROTTLE 1811 //maximum throttle output
+
 
 //  SWITCH OUTPUTS
     #define ARM 1                       //  TBD
