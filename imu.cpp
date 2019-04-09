@@ -18,8 +18,8 @@
 static axis_float_t angle; // angle calculated using accelerometer
 static axis_int16_t gyroRates;
 
-float roll, pitch;
-float AcXRaw,AcYRaw,AcZRaw,TmpRaw,GyXRaw,GyYRaw,GyZRaw;
+float roll, pitch, TmpRaw;
+int AcXRaw,AcYRaw,AcZRaw,GyXRaw,GyYRaw,GyZRaw;
 
 int delta_t;
 long previousTime = 0;
@@ -92,7 +92,7 @@ long currentTime = 0;
 }
 
 void readIMU(){   
-    
+   
    Wire.beginTransmission(MPU_ADDR);
    Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
    Wire.endTransmission(false);
@@ -105,39 +105,24 @@ void readIMU(){
    GyXRaw=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
    GyZRaw=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 
-   #ifdef IMU_RAW_DEBUG
-      Serial.print(AcXRaw);
-      Serial.print(", ");   
-      Serial.print(AcYRaw);
-      Serial.print(", ");   
-      Serial.print(AcZRaw);
-      Serial.print(", ");   
-      Serial.print(GyXRaw);
-      Serial.print(", ");   
-      Serial.print(GyYRaw);
-      Serial.print(", ");   
-      Serial.print(GyZRaw);
-      Serial.print(" — "); 
+   Serial.print((float)AcXRaw / ACCEL_SENS);
+   Serial.print("\t");
 
-   #endif
+   // Are GyY and GyX raw i2c read values flipped??
    
    processGyro();  
-
+   
 }
 
 void processGyro(){  
-
-  #if defined(ACRO) || defined(AIR)
-    //do nothing
-    gyroRates.y = (GyYRaw - GYRO_Y_OFFSET) / GYRO_SENS;
-    gyroRates.x = (GyXRaw - GYRO_X_OFFSET) / GYRO_SENS;
-    gyroRates.z = (GyZRaw - GYRO_Z_OFFSET) / GYRO_SENS;
-  #else
-    gyroRates.y = (GyYRaw - GYRO_Y_OFFSET);
-    gyroRates.x = (GyXRaw - GYRO_X_OFFSET);
-    gyroRates.z = (GyZRaw - GYRO_Z_OFFSET);
+  
+  gyroRates.y = (GyYRaw - GYRO_Y_OFFSET) / GYRO_SENS;
+  gyroRates.x = (GyXRaw - GYRO_X_OFFSET) / GYRO_SENS;
+  gyroRates.z = (GyZRaw - GYRO_Z_OFFSET) / GYRO_SENS;
     
+  #ifdef HORIZON
     processAcc();
+    imuCombine();
   #endif
 
 }
@@ -145,46 +130,49 @@ void processGyro(){
 void processAcc(){
     //filtering accelerometer noise using a median filter
 
-  #ifdef HORIZON
     axis_float_t accel_filtered; // filtered accelerometer raw values
    
     median_filter_in(accel_x_filter, AcXRaw);
     median_filter_in(accel_y_filter, AcYRaw);
     median_filter_in(accel_z_filter, AcZRaw);
 
-    accel_filtered.x = (float) (median_filter_out(accel_x_filter));
-    accel_filtered.y = (float) (median_filter_out(accel_y_filter));
-    accel_filtered.z = (float) (median_filter_out(accel_z_filter));
+    accel_filtered.x = (median_filter_out(accel_x_filter));
+    accel_filtered.y = (median_filter_out(accel_y_filter));
+    accel_filtered.z = (median_filter_out(accel_z_filter));
+
+    Serial.println(accel_filtered.x / ACCEL_SENS);
 
 //    roll = (atan2(accel_filtered.x, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 //    pitch = (atan2(accel_filtered.y, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 
-    roll = (atan2(accel_filtered.x, sqrt(sq(accel_filtered.y)+sq(accel_filtered.z)))*180)/M_PI; 
-    pitch = (atan2(accel_filtered.y, sqrt(sq(accel_filtered.x)+sq(accel_filtered.z)))*180)/M_PI; 
-  
-    imuCombine();
-
-  #endif   
+    roll = (atan2(accel_filtered.x, sqrt((accel_filtered.y*accel_filtered.y)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
+    pitch = (atan2(accel_filtered.y, sqrt((accel_filtered.x*accel_filtered.x)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
  
 }
 
 void imuCombine(){
 
    #ifdef LOOP_SAMPLING
+   /*
      angle.y = GYRO_PART * (angle.y + ((gyroRates.x / GYRO_SENS) * (IMU_SAMPLETIME / 1000000))) + (1-GYRO_PART) * pitch; //complementary filter
      angle.x = GYRO_PART * (angle.x + ((gyroRates.y / GYRO_SENS) * (IMU_SAMPLETIME / 1000000))) + (1-GYRO_PART) * roll;
      angle.z = ((gyroRates.z / GYRO_SENS) * (IMU_SAMPLETIME / 1000000));
-  
-   #else
+   */ 
    
-     angle.y = GYRO_PART * (angle.y + ((gyroRates.x / GYRO_SENS) * (delta_t / 1000000))) + (1-GYRO_PART) * pitch; //complementary filter
-     angle.x = GYRO_PART * (angle.x + ((gyroRates.y / GYRO_SENS) * (delta_t / 1000000))) + (1-GYRO_PART) * roll;
-     angle.z = ((gyroRates.z / GYRO_SENS) * (delta_t / 1000000));
-  
-  /*   angle.z = (angle.z + (gyroRates.z * (delta_t / 1000000))); —> when enabled causes directional lock according
-                                                                     to the direction of the quadcopter during startup 
-                                                                     (essentialy magnetometer-lock w/out accurate north reference) */
-     delta_t = (currentTime - previousTime);      
+   //  Fixed IMU Sample Time (Above) V.S. Dynamic Sample Time (Below)
+    
+     angle.y = GYRO_PART * (angle.y + (gyroRates.x * (micros() - imuEndTime))) + (1-GYRO_PART) * pitch; //complementary filter
+     angle.x = GYRO_PART * (angle.x + (gyroRates.y * (micros() - imuEndTime))) + (1-GYRO_PART) * roll;
+     angle.z = (gyroRates.z * (micros() - imuEndTime));
+  /*   angle.z = (angle.z + (gyroRates.z * (micros() - imuEndTime))); —> when enabled causes directional lock according to the direction of the quadcopter during startup 
+                                                                         (essentialy "magnetometer-lock" without accurate north reference) */
+  #else
+
+     angle.y = GYRO_PART * (angle.y + (gyroRates.x * delta_t)) + (1-GYRO_PART) * pitch; //complementary filter
+     angle.x = GYRO_PART * (angle.x + (gyroRates.y * delta_t)) + (1-GYRO_PART) * roll;
+     angle.z = (gyroRates.z * delta_t);
+     
+     delta_t = (currentTime - previousTime) / 1000000;  
      previousTime = currentTime;
      currentTime = micros();
    #endif
@@ -193,14 +181,9 @@ void imuCombine(){
 
 
 axis_int16_t imu_rates() {
-  gyroRates.x = gyroRates.x / GYRO_SENS;
-  gyroRates.y = gyroRates.y / GYRO_SENS;
-  gyroRates.z = gyroRates.z / GYRO_SENS;
-
-  return (gyroRates);
+  return gyroRates;
 }
 
 axis_float_t imu_angles() {
   return angle;
 }
-
