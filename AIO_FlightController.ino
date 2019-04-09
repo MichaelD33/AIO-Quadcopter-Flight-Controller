@@ -21,10 +21,16 @@
 bool armState = false;
 bool lastArmState = false;
 
-#ifdef LOOP_SAMPLING
-  int imuLastStart, pidLastStart, printStartTime, imuStartTime, pidStartTime;
-//  int pidTime, rxTime, imuTime;  
-  long loopEnd, timestart;
+#if defined(LOOP_SAMPLING) || defined(TIMEPROFILING) || defined(GUI_ENABLED)
+  int printStartTime, imuStartTime, rxStartTime, pidStartTime;
+  long timestart;
+  long loopEnd = 0;
+  long cycles = 1;
+  int imuLastStart = 0;
+  int imuEndTime = 0;
+  int pidLastStart = 0;
+  int pidEndTime = 0;
+
 #endif
 
 #ifdef AIO_v01
@@ -53,10 +59,11 @@ bool lastArmState = false;
 //  byte motorOutput[] = {[motor 1], [motor 2], [motor 3], [motor 4]}; 
 
 void setup() {
-
+   
   #ifdef PRINT_SERIALDATA
     Serial.begin(115200);
   #endif
+    Serial.begin(115200);
   
   #ifdef ATMEGA32u4
     DDRB = DDRB | B11110000; //sets pins D8, D9, D10, D11 as outputs
@@ -72,75 +79,80 @@ void setup() {
 }
 
 void loop() {
-
-  #ifdef LOOP_SAMPLING  
-    timestart = micros();            
-       
-    while((micros() + ((loopEnd - imuLastStart) + timestart)) < IMU_SAMPLING_FREQUENCY){
-      //do nothing
-      imuStartTime = (micros() - timestart);
-    } 
-   #endif
+  
+  #if defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
+    timestart = micros();       
+    
+    #ifdef LOOP_SAMPLING
+      while((micros() - timestart + (loopEnd - imuLastStart)) < IMU_SAMPLING_FREQUENCY){
+        imuStartTime = (micros() - timestart);
+      }
+    #else
+        imuStartTime = (micros() - timestart);
+    #endif
+    
+  #endif
     
 // IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
 
-//   imuTime = (micros() - timestart) - imuStartTime;    
-     
+   #if defined(LOOP_SAMPLING) || defined(TIMEPROFILING)
+    imuEndTime = (micros() - timestart);
+    Serial.print("IMU Time: ");
+    Serial.println(imuEndTime - imuStartTime);
+
+    Serial.print("IMU Sample Rate: ");
+    Serial.println(micros() - imuEndTime);
+   #endif
+
    readRx();  //read the remote and convert data to a rotational rate of ±180°/s (rx.cpp)
-//   rxTime = (micros() - timestart) - imuTime;
 
-
-   if(failsafeState() == 0){    
+   if(failsafeState() == 0){
       switch(chAux1()){
         case 0: //if the arm switch is set to 0, do not enable the quadcopter
           armState = false; break;
-       
-        case 1: //if the arm switch is set to 1, start the PID calculation
-          
-          #ifdef LOOP_SAMPLING
-            while((micros() + ((loopEnd - pidLastStart) + timestart)) < PID_SAMPLETIME){
-                //do nothing
-                pidStartTime = (micros() - timestart);
-            }     
-                
-            initPids();   //start PID calcuation (pid.cpp)
-//            pidTime = (micros() - timestart) - (pidStartTime);
-          #else
-            initPids();   //start PID calcuation (pid.cpp)
-          #endif
-          
-            //if((abs(imu_angles().x) < 20 && abs(imu_angles().y) < 20 ) || armState == lastArmState){
-               //only activate motors if angle is less than 20° 
-              /*
-             #ifdef LOOP_SAMPLING
-             
-               while(micros() - timestart < MOTOR_UPDATE_FREQUENCY){
-                   int dT3 = micros() - timestart;
-               } 
-               
-             #endif 
-               */
-                              
-                   writeMotor(0, motorPwmOut().one);   //PWM motor 1
-                   writeMotor(1, motorPwmOut().two);   //PWM motor 2
-                   writeMotor(2, motorPwmOut().three); //PWM motor 3
-                   writeMotor(3, motorPwmOut().four);  //PWM motor 4
 
-            break;
+        case 1: //if the arm switch is set to 1, start the PID calculation
+
+          #if defined(TIMEPROFILING) || defined(LOOP_SAMPLING) 
+           #ifdef LOOP_SAMPLING
+              while((micros() - timestart + (loopEnd - pidLastStart)) < PID_SAMPLETIME){
+                  pidStartTime = (micros() - timestart);
+              }                     
+            #else
+              pidStartTime = (micros() - timestart);
+            #endif
+          #endif
+
+          initPids();   //start PID calcuation (pid.cpp)                           
+          //pidEndTime = (micros() - timestart);
+          
+          writeMotor(0, motorPwmOut().one);   //PWM motor 1
+          writeMotor(1, motorPwmOut().two);   //PWM motor 2
+          writeMotor(2, motorPwmOut().three); //PWM motor 3
+          writeMotor(3, motorPwmOut().four);  //PWM motor 4
+                  
+          armState = true; break;
         
         case 2:
           armState = false; break;
     
-        default: 
+        default:
           armState = false; break; 
       }
-    }else if(failsafeState != 0){
+    
+    }else if(failsafeState() != 0){
+    
     //turn motors off if failsafe is triggered
+    Serial.print(failsafeState());
     armState = false;
+    
     }else{
+    
     //turn motors off if something else happens
+    Serial.print(failsafeState());
     armState = false;
+    
     }
                 
     if(armState == false){
@@ -152,7 +164,7 @@ void loop() {
     
     lastArmState = armState;
 
-    #ifdef LOOP_SAMPLING
+    #ifdef TIMEPROFILING
       printStartTime = (micros() - timestart);
     #endif
   
@@ -161,10 +173,14 @@ void loop() {
       profileLoop(); // prints time profiling data to serial monitor when LOOP_SAMPLING is enabled
     #endif
 
-    #ifdef LOOP_SAMPLING
+    #if defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
     // make sure that time profiling variables aren't being redeclared each loop.
-      loopEnd = (micros() - timestart);
       imuLastStart = imuStartTime;    
+      loopEnd = (micros() - timestart);
+    #endif
+    
+    #if defined (GUI_ENABLED) || defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
+      cycles++;
     #endif
     
 }
@@ -185,86 +201,7 @@ int lastArmingState(){
 void printSerial(){
 
   #ifdef GUI_ENABLED
-    Serial.print("$ ");
-//    Serial.print(cycles); // add number of loops
-//    Serial.print(" ");
-    Serial.print(imu_angles().x);
-    Serial.print(" ");
-    Serial.print(imu_angles().y);
-    Serial.print(" ");
-    Serial.print(imu_angles().z);
-    Serial.print(" ");
-    Serial.print(chRoll());
-    Serial.print(" ");
-    Serial.print(chPitch());
-    Serial.print(" ");
-    Serial.println(chYaw());
-    Serial.print(" ");
-    Serial.println(failsafeState());
-  #endif
-
-  #ifdef FULL_PROCESS_DEBUG
-    
-    Serial.print(imu_angles().x);
-    Serial.print(", ");   
-    Serial.print(imu_angles().y);
-    Serial.print(", ");   
-    Serial.print(imu_angles().z);
-    Serial.print("\t");   
-
-    if(failsafeState() == 0){
-      Serial.print("REMOTE ACTIVE — ");
-      Serial.print(chRoll());
-    }else if(failsafeState() == 1){
-      Serial.print("SIGNAL LOST");        
-    }else if(failsafeState() == 3){
-      Serial.print("FAILSAFE ENGAGED");
-    }else{
-      Serial.print("REMOTE ERROR!");
-    }
-
-    Serial.print("\n");
-
-  /*
-    Serial.print(", ");
-    Serial.print(imu_rates().x);
-    Serial.print(", ");
-    Serial.print(imu_rates().y);
-    Serial.print(", ");
-    Serial.print(imu_rates().z);
-
-    if(failsafeState() == 0){
-      Serial.print("REMOTE ACTIVE — ");
-      Serial.print(chRoll());
-    }else if(failsafeState() == 1){
-      Serial.print("SIGNAL LOST");        
-    }else if(failsafeState() == 3){
-      Serial.print("FAILSAFE ENGAGED");
-    }else{
-      Serial.print("REMOTE ERROR!");
-    }
-   
-    Serial.print(outputX);   
-    Serial.print(", ");
-    Serial.print(outputY);  
-    Serial.print(", ");   
-    Serial.print(outputZ);
-    Serial.print("\n"); 
-    */
-     
-
-//  Motor speeds can be determined using above PID output data (and throttle)
-  /*
-    Serial.print(", ");     
-    Serial.print(motorPwmOut().one);
-    Serial.print(", ");
-    Serial.print(motorPwmOut().two);
-    Serial.print(", ");
-    Serial.print(motorPwmOut().three);
-    Serial.print(", ");
-    Serial.print(motorPwmOut().four);
-  */
-  
+    Serial.println("$ " + String(cycles) + " " + String(imu_angles().x, 3) + " " + String(imu_angles().y, 3) + " " + String(imu_angles().z, 3) + " 0 " + String(chRoll()) + " " + String(chPitch()) + " " + String(chYaw()) + " "  + String(KpX, 4) + " " + String(KiX, 6) + " " + String(KdX) + " " + String(KpY, 4) + " " + String(KiY, 6) + " " + String(KdY) + " " + String(KpZ, 4) + " " + String(KiZ, 6) + " " + String(KdZ) + " " + (String)loopEnd + " " + (String)failsafeState());
   #endif
       
 }
@@ -273,26 +210,43 @@ void printSerial(){
 void profileLoop(){
 
   #ifdef LOOP_SAMPLING
-      Serial.print(timestart);
-      Serial.print(", ");
+      Serial.print(cycles);
+      Serial.print("\t");      
       Serial.print(imuStartTime);
-      Serial.print(", ");
+      Serial.print("\t");
+      Serial.print(rxStartTime);
+      Serial.print("\t");
       Serial.print(pidStartTime);
-      Serial.print(", ");
+      Serial.print("\t");
       Serial.print(printStartTime);
-      Serial.print(", ");
+      Serial.print("\t");
       Serial.print(loopEnd);
       Serial.print("\n");
-/*        
-//      Serial.print("\tIMU: ");
-      Serial.print(imuTime);
-      Serial.print("\t");
-//      Serial.print("\tRX: ");
-      Serial.print(rxTime);
-      Serial.print("\t");
-//      Serial.print("\t\tPID: ");
-      Serial.println(pidTime);
-*/
   #endif
 }
 
+    /* 
+    Serial.print(cycles); // add number of loops
+    Serial.print(" ");
+    Serial.print(imu_angles().x);
+    Serial.print(" ");
+    Serial.print(imu_angles().y);
+    Serial.print(" ");
+    Serial.print(imu_angles().z);
+    Serial.print(" ");
+    Serial.print("0"); // place holder for temperature
+    Serial.print(" ");
+    Serial.print(chRoll());
+    Serial.print(" ");
+    Serial.print(chPitch());
+    Serial.print(" ");
+    Serial.print(chYaw());
+    Serial.print(" ");
+    Serial.print(chRoll());
+    Serial.print(" ");
+    Serial.print(chPitch());
+    Serial.print(" ");
+    Serial.print(chYaw());
+    Serial.print(" ");
+    Serial.println(failsafeState());
+    */
