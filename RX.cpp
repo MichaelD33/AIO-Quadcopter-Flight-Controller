@@ -3,9 +3,7 @@
 #include "SBUS.h"
 #include "RX.h"
 
-float throttleRx;
-int rollRx, pitchRx, yawRx, swA, swB, swC, swD, failsafe;
-float rollRate, pitchRate, yawRate, throttleRate;
+int throttleRx, rollRx, pitchRx, yawRx, swA, swB, swC, swD, failsafe;
 
 // y = ((varRate*x)^3)/180^varRate
 
@@ -35,54 +33,36 @@ void readRx(){
       failsafe = sBus.failsafe_status;
 
 //  Map gimbals values to desired outputs
-      #ifdef MAP_THROTTLE_FLOAT
-        throttleRx = mapFloat(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
-      #else
-        throttleRx = map(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
-      #endif
-      
+
+      throttleRx = map(throttleRx, MINTHROTTLE, MAXTHROTTLE, ESC_MIN, (ESC_MAX * ESC_TOLERANCE));
       rollRx = map(rollRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
       pitchRx = map(pitchRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
       yawRx = map(yawRx, MINTHROTTLE, MAXTHROTTLE, (RC_RATES*-1), RC_RATES);
      
-//    FIX SUPER RATE MAPPING
-    /*
-      throttleRate = pow(throttleRx, 2.2);
-      rollRate = pow(rollRx, );
-      pitchRate = pow(pitchRx, );
-      yawRate = pow(yawRx, );
-    */
-     
 //    map switches to appropriate values
       swA = map(swA, MINTHROTTLE, MAXTHROTTLE, 0, 2);
-      swB = map(swB, MINTHROTTLE, MAXTHROTTLE, 0, 2);
-      swC = map(swC, MINTHROTTLE, MAXTHROTTLE, 0, 2);
-      swD = map(swD, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      // swB = map(swB, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      // swC = map(swC, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      // swD = map(swD, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      
 
     }
 }
 
-float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
-{
- return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 
 float chThrottle(){
   return throttleRx;
 }
 
-float chRoll() {
-  //return rollRate;
+int chRoll() {
   return rollRx;
 }
 
-float chPitch() {
-  //return pitchRate;
+int chPitch() {
   return pitchRx;
 }
 
-float chYaw() {
-  //return yawRate;
+int chYaw() {
   return yawRx;
 }
 
@@ -95,5 +75,3 @@ int chAux2() {
 int failsafeState(){
   return failsafe;
 }
-
-
