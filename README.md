@@ -1,8 +1,7 @@
 # AIO Quadcopter Flight Controller
 
 Follow the continued development of this project on my website:
-*coming soon*
-<!--- http://delaney.nyc --->
+https://delaney.nyc/projects/
 
 ---
 
