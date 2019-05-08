@@ -33,11 +33,9 @@ void initPids(){
 
 void computePids(){
 
-    #ifdef LOOP_SAMPLING
-      
-    #else
+    #ifndef LOOP_SAMPLING
       currentT = micros();
-      float timeChange = (float) (currentT - lastTime);
+      long timeChange = (currentT - lastTime);
     #endif
     
     #ifdef HORIZON
@@ -85,22 +83,25 @@ void computePids(){
     float Iy = KiY * errorSum.y;
     float Iz = KiZ * errorSum.z;
 
+    
     //clamp the range of integral values
-        if(Ix > MAX_INTEGRAL){ 
-          Ix = MAX_INTEGRAL; 
-        }else if (Ix < (MAX_INTEGRAL * -1)){
-          Ix = MAX_INTEGRAL * -1;
-        }   
-        if(Iy > MAX_INTEGRAL){ 
-          Iy = MAX_INTEGRAL; 
-        }else if (Iy < (MAX_INTEGRAL * -1)){
-          Iy = MAX_INTEGRAL * -1;
-        }
-         if(Iz > MAX_INTEGRAL){ 
-          Iz = MAX_INTEGRAL; 
-        }else if (Iz < (MAX_INTEGRAL * -1)){
-          Iz = MAX_INTEGRAL * -1;
-        }
+    if(Ix > MAX_INTEGRAL){ 
+      Ix = MAX_INTEGRAL; 
+    }else if (Ix < (MAX_INTEGRAL * -1)){
+      Ix = MAX_INTEGRAL * -1;
+    }
+        
+    if(Iy > MAX_INTEGRAL){ 
+      Iy = MAX_INTEGRAL; 
+    }else if (Iy < (MAX_INTEGRAL * -1)){
+      Iy = MAX_INTEGRAL * -1;
+    }
+        
+    if(Iz > MAX_INTEGRAL){ 
+      Iz = MAX_INTEGRAL; 
+    }else if (Iz < (MAX_INTEGRAL * -1)){
+      Iz = MAX_INTEGRAL * -1;
+    }
 
     outputX = (KpX * error.x + Ix - KdX * deltaError.x);
     outputY = (KpY * error.y + Iy - KdY * deltaError.y);
@@ -131,7 +132,7 @@ void computePids(){
         motorSpeed.one = ESC_MAX;  
        }else if (motorSpeed.one < ESC_MIN){
         motorSpeed.one = ESC_MIN;
-       }else{  }  
+       }else{ }  
 
      if(motorSpeed.two > ESC_MAX){
         motorSpeed.two = ESC_MAX;  
@@ -143,38 +144,33 @@ void computePids(){
         motorSpeed.three = ESC_MAX;  
        }else if (motorSpeed.three < ESC_MIN){
         motorSpeed.three = ESC_MIN;
-       }else{  } 
+       }else{ } 
 
      if(motorSpeed.four > ESC_MAX){
         motorSpeed.four = ESC_MAX;  
        }else if (motorSpeed.four < ESC_MIN){
         motorSpeed.four = ESC_MIN;
-       }else{  } 
+       }else{ } 
            
 }
 
 void resetPids(){
 
-   if(chThrottle() < 10){
-    
+   if(chThrottle() < 10){    
       errorSum.x = 0;
       errorSum.y = 0;
       errorSum.z = 0;   
       
     }else if(armingState() != lastArmingState()){
     //reset the integral term when the quadcopter is armed
-    //this should work b/c initPids() does not run when armState switches to false
-    
-    errorSum.x = 0;
-    errorSum.y = 0;
-    errorSum.z = 0;
+      errorSum.x = 0;
+      errorSum.y = 0;
+      errorSum.z = 0;
     
   }
        
 }
 
 int_pwmOut motorPwmOut(){
-  //allows me to return all four speeds in one method
   return motorSpeed;
 }
-
