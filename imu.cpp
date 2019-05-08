@@ -11,6 +11,7 @@
  * 
 */
 
+#include <Arduino.h>
 #include <Math.h>
 #include <Wire.h>
 #include "imu.h"
@@ -22,8 +23,10 @@ float roll, pitch, TmpRaw;
 int AcXRaw,AcYRaw,AcZRaw,GyXRaw,GyYRaw,GyZRaw;
 
 int delta_t;
-long previousTime = 0;
-long currentTime = 0;
+unsigned long previousTime = 0;
+unsigned long currentTime = 0;
+
+// extern unsigned long imuEndTime;
 
 #ifdef HORIZON
    median_filter_t accel_x_filter = median_filter_new(FILTER_COMPARISONS,0); //declare median filter for x axis 
@@ -45,7 +48,7 @@ long currentTime = 0;
    Wire.endTransmission(true);  
    
    Wire.beginTransmission(MPU_ADDR);
-    Wire.write(0x1B);  // Access register 1B - gyroscope config
+   Wire.write(0x1B);  // Access register 1B - gyroscope config
    #ifdef GYRO_SENSITIVITY_250
      Wire.write(B00000000); // Setting the gyro to full scale +/- 250 deg/sec
    #elif defined GYRO_SENSITIVITY_500
@@ -53,10 +56,10 @@ long currentTime = 0;
    #elif defined GYRO_SENSITIVITY_1000
      Wire.write(B00010000); // Setting the gyro to full scale +/- 1000 deg/sec
    #elif defined GYRO_SENSITIVITY_2000
-       Wire.write(B00011000); // Setting the gyro to full scale +/- 2000 deg/sec
+     Wire.write(B00011000); // Setting the gyro to full scale +/- 2000 deg/sec
    #endif
-      
    Wire.endTransmission(true);
+   
    Wire.beginTransmission(MPU_ADDR);
    Wire.write(0x1C);  // Access register 1C - accelerometer config
 
@@ -104,11 +107,6 @@ void readIMU(){
    GyYRaw=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
    GyXRaw=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
    GyZRaw=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-
-   Serial.print((float)AcXRaw / ACCEL_SENS);
-   Serial.print("\t");
-
-   // Are GyY and GyX raw i2c read values flipped??
    
    processGyro();  
    
@@ -140,42 +138,32 @@ void processAcc(){
     accel_filtered.y = (median_filter_out(accel_y_filter));
     accel_filtered.z = (median_filter_out(accel_z_filter));
 
-    Serial.println(accel_filtered.x / ACCEL_SENS);
+    roll = (atan2(accel_filtered.x, sqrt((accel_filtered.y*accel_filtered.y)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
+    pitch = (atan2(accel_filtered.y, sqrt((accel_filtered.x*accel_filtered.x)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
 
 //    roll = (atan2(accel_filtered.x, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 //    pitch = (atan2(accel_filtered.y, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 
-    roll = (atan2(accel_filtered.x, sqrt((accel_filtered.y*accel_filtered.y)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
-    pitch = (atan2(accel_filtered.y, sqrt((accel_filtered.x*accel_filtered.x)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
- 
 }
 
 void imuCombine(){
 
-   #ifdef LOOP_SAMPLING
-   /*
-     angle.y = GYRO_PART * (angle.y + ((gyroRates.x / GYRO_SENS) * (IMU_SAMPLETIME / 1000000))) + (1-GYRO_PART) * pitch; //complementary filter
-     angle.x = GYRO_PART * (angle.x + ((gyroRates.y / GYRO_SENS) * (IMU_SAMPLETIME / 1000000))) + (1-GYRO_PART) * roll;
-     angle.z = ((gyroRates.z / GYRO_SENS) * (IMU_SAMPLETIME / 1000000));
-   */ 
-   
-   //  Fixed IMU Sample Time (Above) V.S. Dynamic Sample Time (Below)
-    
-     angle.y = GYRO_PART * (angle.y + (gyroRates.x * (micros() - imuEndTime))) + (1-GYRO_PART) * pitch; //complementary filter
-     angle.x = GYRO_PART * (angle.x + (gyroRates.y * (micros() - imuEndTime))) + (1-GYRO_PART) * roll;
-     angle.z = (gyroRates.z * (micros() - imuEndTime));
-  /*   angle.z = (angle.z + (gyroRates.z * (micros() - imuEndTime))); —> when enabled causes directional lock according to the direction of the quadcopter during startup 
-                                                                         (essentialy "magnetometer-lock" without accurate north reference) */
-  #else
+  #ifdef LOOP_SAMPLING
 
+     angle.y = GYRO_PART * (angle.y + ((gyroRates.x / GYRO_SENS) * (IMU_SAMPLETIME))) + (1-GYRO_PART) * pitch; //complementary filter
+     angle.x = GYRO_PART * (angle.x + ((gyroRates.y / GYRO_SENS) * (IMU_SAMPLETIME))) + (1-GYRO_PART) * roll;
+     angle.z = ((gyroRates.z / GYRO_SENS) * (IMU_SAMPLETIME));
+
+  #else
+     currentTime = micros();
+     delta_t = (currentTime - previousTime) / 1000000;
+     
      angle.y = GYRO_PART * (angle.y + (gyroRates.x * delta_t)) + (1-GYRO_PART) * pitch; //complementary filter
      angle.x = GYRO_PART * (angle.x + (gyroRates.y * delta_t)) + (1-GYRO_PART) * roll;
-     angle.z = (gyroRates.z * delta_t);
+     angle.z = (gyroRates.z * delta_t);     
      
-     delta_t = (currentTime - previousTime) / 1000000;  
      previousTime = currentTime;
-     currentTime = micros();
-   #endif
+  #endif
    
 }
 
