@@ -2,14 +2,30 @@
  *  AIO_FlightController - An integrated quadcopter flight controller program for the Arduino platform.
  *  Copyright © 2018-2019 Michael Delaney. All rights reserved.
  * 
- *  This device takes data from an inertial measurement unit about its orientation and from an external remote about 
- *  the desired change in position to the system and makes several calculations to adjust to said position by varying 
- *  the speed of its motors according to calculations made by the control loop.
+ *  This device takes orientation data from an inertial measurement unit and input from an external remote to adjust 
+ *  its position by varying the speed of its motors according to calculations made by the control loop.
  * 
- *  Active Source Code: https://github.com/MichaelD33/AIO-Quadcopter-Flight-Controller
+ *  Source Code: https://github.com/MichaelD33/AIO-Quadcopter-Flight-Controller
  *  Design Files: https://github.com/MichaelD33/AIO-Quadcopter-Design
  *  
- *  Simple Quadcopter FC in ~1500 lines of code
+ *  A simple quadcopter flight controller in ~1500 lines of code
+
+    This program is part of the AIO Flight Controller.
+    
+    The AIO Flight Controller is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    The AIO Flight Controller is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  
  */
 
 #include <Arduino.h>
@@ -25,34 +41,32 @@ bool lastArmState = false;
   unsigned long printStartTime, imuStartTime, rxStartTime, pidStartTime;
   unsigned long timestart;
   unsigned long loopEnd = 0;
-  unsigned long cycles = 1;
   unsigned long imuEndTime = 0;
   unsigned long pidEndTime = 0;
 #endif
 
-#ifdef AIO_v01
-  byte motorOutput[] = {9, 5, 10, 6};  //prototype v0.1 configuration - RETIRED
+#ifdef AIO_v01 //prototype v0.1 configuration - LEGACY
+  byte motorOutput[] = {9, 5, 10, 6};  
   #define ATMEGA32u4
 #endif
 
-#ifdef AIO_v03
-  byte motorOutput[] = {5, 9, 6, 10};   //version 0.3 configuration - GREEN BOARD (purple frame)
-//  byte motorOutput[] = {6, 10, 5, 9};   //version 0.3 configuration - GREEN BOARD (purple frame)
-
+#ifdef AIO_v03  //version 0.3 configuration - LEGACY (purple frame)
+  byte motorOutput[] = {5, 9, 6, 10};  
+//  byte motorOutput[] = {6, 10, 5, 9};   
   #define ATMEGA32u4
 #endif
 
-#ifdef AIO_v04
-  byte motorOutput[] = {10, 9, 13, 6}; //version 0.4 configuration - RED PCB (legacy)
+#ifdef AIO_v04 //version 0.4 configuration - LEGACY
+  byte motorOutput[] = {10, 9, 13, 6}; 
   #define ATMEGA32u4
 #endif
 
-#ifdef AIO_v041
-  byte motorOutput[] = {10, 9, 5, 6};  //version 0.4.1 configuration — Updated RED PCB - Professionally Made RED Frame
+#ifdef AIO_v041 //version 0.4.1 configuration - Black PCB
+  byte motorOutput[] = {10, 9, 5, 6};  
   #define ATMEGA32u4
 #endif
 
-/*  IF NOT USING THE AIO PCB USE FORMAT AS SHOWN BELOW  (REF. DIAGRAM ON GITHUB FOR MOTOR LOCATIONS) */
+/*  IF NOT USING THE AIO PCB, USE THE FORMAT SHOWN BELOW —— (MOTOR LOCATION REF. DIAGRAM ON GITHUB) */
 //  byte motorOutput[] = {[motor 1], [motor 2], [motor 3], [motor 4]}; 
 
 void setup() {
@@ -74,6 +88,7 @@ void setup() {
 
 }
 
+
 void loop() {
   
   #if defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
@@ -87,18 +102,20 @@ void loop() {
         imuStartTime = micros();
     #endif
 
-    int imu_dt = imuStartTime - imuEndTime;
-    Serial.print("IMU ∆T: ");
-    Serial.println(imu_dt);
-    
   #endif
 
 // IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
 
    #if defined(LOOP_SAMPLING) || defined(TIMEPROFILING)
-    imuEndTime = micros();
-    int processTime = imuEndTime - imuStartTime;
+    
+    unsigned long imu_dt = imuStartTime - imuEndTime;
+    Serial.print("IMU ∆T: ");
+    Serial.println(imu_dt);
+    
+    imuEndTime = micros();  // record end time to use for sampling calculation
+    
+    unsigned long processTime = imuEndTime - imuStartTime;
     Serial.print("IMU Process Time: ");
     Serial.println(processTime);
    #endif
@@ -126,7 +143,7 @@ void loop() {
 
           #if defined(LOOP_SAMPLING) || defined(TIMEPROFILING)
             Serial.print("PID ∆T: ");
-            int pid_dt = pidStartTime - pidEndTime;
+            unsigned long pid_dt = pidStartTime - pidEndTime;
             Serial.println(pid_dt);
             
             pidEndTime = micros();
@@ -179,12 +196,8 @@ void loop() {
     #ifdef PRINT_SERIALDATA
       printSerial(); // used for GUI application and debugging
     #endif
-    
-    #if defined(GUI_ENABLED) || defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
-      cycles++;
-    #endif
 
-    int loop_dt = micros() - timestart;
+    unsigned long loop_dt = micros() - timestart;
     Serial.print("Loop Time: ");
     Serial.println(loop_dt);
     Serial.println("———————————");
@@ -206,14 +219,7 @@ int lastArmingState(){
   
 void printSerial(){
 
-  #ifdef GUI_ENABLED
-    Serial.println("$ " + String(cycles) + " " + String(imu_angles().x, 3) + " " + String(imu_angles().y, 3) + " " + String(imu_angles().z, 3) + " 0 " + String(chRoll()) + " " + String(chPitch()) + " " + String(chYaw()) + " "  + String(KpX, 4) + " " + String(KiX, 6) + " " + String(KdX) + " " + String(KpY, 4) + " " + String(KiY, 6) + " " + String(KdY) + " " + String(KpZ, 4) + " " + String(KiZ, 6) + " " + String(KdZ) + " " + (String)loopEnd + " " + (String)failsafeState());
-  #endif
-
 /*
-  #ifdef TIMEPROFILING
-    //Serial.println("$ " + String(cycles) + " " + String() + " " + String() + " " + String() + " " + String());
-  #endif
 
   switch(chAux2()){
     
