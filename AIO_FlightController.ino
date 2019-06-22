@@ -23,8 +23,7 @@
     Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    License along with this program; if not, see <https://www.gnu.org/licenses/>.
   
  */
 
@@ -37,12 +36,11 @@
 bool armState = false;
 bool lastArmState = false;
 
-#if defined(LOOP_SAMPLING) || defined(TIMEPROFILING) || defined(GUI_ENABLED)
-  unsigned long printStartTime, imuStartTime, rxStartTime, pidStartTime;
-  unsigned long timestart;
-  unsigned long loopEnd = 0;
-  unsigned long imuEndTime = 0;
-  unsigned long pidEndTime = 0;
+#ifdef LOOP_SAMPLING
+  long indexTime;
+  long imuEndTime = 0;
+  long pidEndTime = 0;
+  long lastStart = 0;
 #endif
 
 #ifdef AIO_v01 //prototype v0.1 configuration - LEGACY
@@ -74,7 +72,7 @@ void setup() {
   #ifdef PRINT_SERIALDATA
     Serial.begin(115200);
   #endif
-
+  
   #ifdef ATMEGA32u4
     DDRB = DDRB | B11110000; //sets pins D8, D9, D10, D11 as outputs
     DDRC = DDRC | B11000000; //sets pin D5 as output
@@ -86,42 +84,46 @@ void setup() {
   initSbus();  //connect to the remote reciever (rx.cpp)
   initIMU();   //activate the imu and set gyroscope and accelerometer sensitivity (imu.cpp)
 
+  indexTime = micros();
+  imuEndTime = micros();
+  pidEndTime = micros();
+
 }
 
 
 void loop() {
-  
-  #if defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
-    timestart = micros();
 
-    #ifdef LOOP_SAMPLING
-      while((micros() - imuEndTime) < IMU_SAMPLETIME){
-        imuStartTime = micros();
-      }
-    #else
-        imuStartTime = micros();
-    #endif
+  #ifdef LOOP_SAMPLING
 
+    /*     ** LOOP TIMING **      */         
+    while((micros() - lastStart) < LOOP_SAMPLETIME){
+      indexTime = micros();
+    }
+       
+    indexTime = micros();
+    long lastSample = indexTime - lastStart;
+    Serial.print("Last Loop Duration: ");
+    Serial.print(lastSample);  
+    lastStart = indexTime;
+
+    /*     ** IMU TIMING **       */   
+    while((micros() - imuEndTime) < IMU_SAMPLETIME){
+      indexTime = micros();
+    }
+    
+    Serial.print(",\t IMU: ");
+    Serial.print(indexTime - imuEndTime);
+    imuEndTime = indexTime;  // record end time to use for sampling calculation    
   #endif
 
-// IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
+   /*     ** IMU DATA COLLECTION **       */
    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
-
-   #if defined(LOOP_SAMPLING) || defined(TIMEPROFILING)
-    
-    unsigned long imu_dt = imuStartTime - imuEndTime;
-    Serial.print("IMU ∆T: ");
-    Serial.println(imu_dt);
-    
-    imuEndTime = micros();  // record end time to use for sampling calculation
-    
-    unsigned long processTime = imuEndTime - imuStartTime;
-    Serial.print("IMU Process Time: ");
-    Serial.println(processTime);
-   #endif
-
+              // IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
+  
+   /*     ** RX DATA COLLECTION **       */
    readRx();  //read the remote and convert data to a rotational rate of ±180°/s (rx.cpp)
 
+   /*     ** PROGRAM START CONTINGENCY **       */
    if(failsafeState() == 0){
       switch(chAux1()){
         case 0: //if the arm switch is set to 0, do not enable the quadcopter
@@ -129,29 +131,20 @@ void loop() {
 
         case 1: //if the arm  switch is set to 1, start the PID calculation
 
-          #if defined(TIMEPROFILING) || defined(LOOP_SAMPLING)
-           #ifdef LOOP_SAMPLING
-              while((micros() - pidEndTime) < PID_SAMPLETIME){
-                pidStartTime = micros();
-              }                     
-            #else
-              pidStartTime = micros();
-            #endif
+          /*      ** PID TIMING **      */ 
+          #ifdef LOOP_SAMPLING            
+            while((micros() - pidEndTime) < PID_SAMPLETIME){
+              indexTime = micros();
+            }    
+            Serial.print(",\t PID: ");
+            Serial.println(indexTime - pidEndTime);
+            pidEndTime = indexTime;     
           #endif
 
-          initPids();   //start PID calcuation (pid.cpp)               
+          /*      ** PROCESS INPUT DATA **      */ 
+          initPids(); 
 
-          #if defined(LOOP_SAMPLING) || defined(TIMEPROFILING)
-            Serial.print("PID ∆T: ");
-            unsigned long pid_dt = pidStartTime - pidEndTime;
-            Serial.println(pid_dt);
-            
-            pidEndTime = micros();
-           
-            Serial.print("PID Process Time: ");
-            Serial.println(pidEndTime - pidStartTime);
-          #endif
-          
+          /*      ** SET MOTOR SPEEDS **      */ 
           writeMotor(0, motorPwmOut().one);   //PWM motor 1
           writeMotor(1, motorPwmOut().two);   //PWM motor 2
           writeMotor(2, motorPwmOut().three); //PWM motor 3
@@ -179,28 +172,23 @@ void loop() {
     armState = false;
     
     }
-                
+
+
     if(armState == false){
+      /*  IF DEVICE DISARMS ——> DISABLE MOTORS */
       writeMotor(0, 0);
       writeMotor(1, 0);
       writeMotor(2, 0);
       writeMotor(3, 0);
+
     }
     
     lastArmState = armState;
 
-    #ifdef TIMEPROFILING
-      printStartTime = (micros() - timestart);
-    #endif
   
     #ifdef PRINT_SERIALDATA
       printSerial(); // used for GUI application and debugging
     #endif
-
-    unsigned long loop_dt = micros() - timestart;
-    Serial.print("Loop Time: ");
-    Serial.println(loop_dt);
-    Serial.println("———————————");
 
 }
 
