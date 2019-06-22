@@ -5,93 +5,72 @@
 
 /* Define Parameters */
 
-/* -------------------------------------------------------DEBUGGING------------------------------------------------------------ */
+/* ——————————————————————————————————————————————————————DEBUGGING————————————————————————————————————————————————————————— */
 
-//  #define PRINT_SERIALDATA     // outputs any specified data to the serial monitor for debugging
-//    #define FULL_PROCESS_DEBUG   // outputs critical data from each function to ensure proper functionality —— PRINT_SERIALDATA MUST BE ENABLED
-//    #define IMU_RAW_DEBUG   
-//    #define GUI_ENABLED        // enables output to MATLAB GUI application over serial
+  #define PRINT_SERIALDATA     // calls the printSerial() function in loop()
+  #define LOOP_SAMPLING      // enables loop sampling for fixed PID and IMU sampling rates as well as loop time profiling
 
-//  #define TIMEPROFILING        // outputs breakdown of loop timing to serial monitor
-//    #define LOOP_SAMPLING      // enables loop sampling for fixed PID and IMU sampling rates as well as loop time profiling
+/* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
-/* ----------------------------------------------FLIGHT CONTROLLER BOARD CONFIG------------------------------------------------ */
- 
-//  #define AIO_v01   // LEGACY
-//    #define AIO_v03   // Green PCB (no +5V)
-//  #define AIO_v04   // Red PCB
-    #define AIO_v041  // Updated Red PCB with ProMtection Diodes (Red Shapeways Frame)
-//  #define 328
-//  #define ATMEGA32u4
-
-/* -----------------------------------------------AIRCRAFT CONFIGURATION-------------------------------------------------------- */
-
-//  AIRCRAFT TYPE CONFIGURATION ——— TBD
-    #define QUADX
-//  #define QUADP
-//  #define HEX_P
-//  #define TRI
-
-//  STABILIZATION MODE
+/*  STABILIZATION MODE  */
+    #define HORIZON
 //  #define ACRO                      
-//  #define AIR                      //  WORK IN PROGRESS (ACRO with motors always on?)
-    #define HORIZON                
-//  #define ANGLE                    //  TBD
 
-/* ----------------------------------------------MOTOR OUTPUT CONFIGURATION------------------------------------------------------ */
+/* FLIGHT CONTROLLER BOARD CONFIG */
+//  #define AIO_v01   // LEGACY
+//  #define AIO_v03   // LEGACY (purple frame) (no +5V)
+//  #define AIO_v04   // LEGACY (updated to 041)
+    #define AIO_v041  // CURRENT REVISION (+5V enabled)
 
-//  SPEED CONTROLLER TYPE
-    #define BRUSHED
-//  #define BRUSHLESS                //  TBD
+/* DIY FLIGHT CONTROLLER CONFIG (ADDITIONAL SETUP MAY BE REQUIRED) */
+//  #define ATMEGA32u4
+/*  #define ATMEGA328 */ // NOT CONFIGURED
 
-// SPEED CONTROLLER CONFIG
-    #define ESC_TOLERANCE 0.9        // THROTTLE MAX = (ESC_MAX * ESC_TOLERANCE)
-    #define ESC_MAX 255              // 255 for BRUSHED MOTORS ——— 2000 for BRUSHLESS SPEED CONTROLLERS
-    #define ESC_MIN 0                // 0 for BRUSHED MOTORS ————— 1000 for BRUSHLESS SPEED CONTROLLERS
+/* ———————————————————————————————————————————————————REMOTE CONTROL CONFIGURATION—————————————————————————————————————————————————————— */
 
-/* ---------------------------------------------PID CONTROLLER CONFIGURATION--------------------------------------------------------- */
+//  TRANSMITTER GIMBAL/SWITCH OUTPUT VALUES
+    #define MINTHROTTLE 172 //  minimum throttle output
+    #define MAXTHROTTLE 1811 // maximum throttle output
+
+
+//  SWITCH OUTPUTS
+    #define ARM 1                       //  TBD
+    #define MODE 2                      //  TBD
+    #define BEEP 3                      //  TBD
+    #define FAILSAFE 4                  //  TBD
+
+//  SET QUADCOPTER ROATATIONAL RATE
+    #define RC_RATES 180 // Maximum rotation speed: 180 degrees per second
+
+/* ———————————————————————————————————————————————PID CONTROLLER CONFIGURATION———————————————————————————————————————————————— */
 
     #ifdef LOOP_SAMPLING
-      #define PID_SAMPLETIME 5000 //define PID sample time at a frequency of 5000µs
-      #define IMU_SAMPLETIME 5000
+      #define LOOP_SAMPLETIME 3000 //define loop sample time at a frequency of 3000µs
+      #define PID_SAMPLETIME 3000 
+      #define IMU_SAMPLETIME 3000
     #endif
     
     #define MAX_INTEGRAL 230  //  integral clamping to avoid writing values outside the range of pwm output
+  
+/* ————————————————————————————————————————————————MOTOR OUTPUT CONFIGURATION———————————————————————————————————————————————— */
 
-/* ----------------------------------------INERTIAL MEASURMENT UNIT CONFIGURATION------------------------------------------------ */
+//  SPEED CONTROLLER TYPE
+    #define BRUSHED
 
-//  IMU TYPE CONFIGURATION —— **IGNORE IF USING AIO PCB DESIGN AS DEFINED ABOVE** —— THIS SECTION IS PREDEFINED ACCORDING TO AIO PCB VERSION
-//  #define MPU6050_69
-//  #define MPU6050_68
-//  #define MPU6000                       //  TBD
-//  #define MPU6500_SPI                   //  TBD
-//  #define MPU9250_SPI                   //  TBD
-//  #define MPU6500_I2C                   //  TBD
-//  #define MPU9250_I2C                   //  TBD
+// SPEED CONTROLLER CONFIG
+    #define ESC_TOLERANCE 0.9        // THROTTLE MAX = (ESC_MAX * ESC_TOLERANCE)
+    #define ESC_MAX 255              // 255 for BRUSHED MOTORS
+    #define ESC_MIN 0                // 0 for BRUSHED MOTORS
+
+/* ———————————————————————————————————————————INERTIAL MEASURMENT UNIT CONFIGURATION—————————————————————————————————————————— */
 
 //  IMU COMMUNICATION SETTINGS
-//   #define I2C_400
-//   #define I2C_STANDARD
-//   #define SPI  
-
-     #ifdef LOOP_SAMPLING
-       #define IMU_SAMPLING_FREQUENCY 3000 //define IMU sample time at a frequency of 3000µs
-     #endif
-     
+//   #define I2C_STANDARD     
      #define I2C_FASTMODE
 
      #define DIGITAL_LOW_PASS_FILTER //comment this line out to deactivate the MPU6050 digital low pass filter 
-//    #define DLPF_BANDWIDTH 3  // filtration bandwith configuration (coming soon)
+//     #define DLPF_BANDWIDTH 3  // filtration bandwith configuration (coming soon)
 
-/*  IMU OFFSET CONFIGURATION -- CONFIGURED BELOW WITHIN SPECIFIC FLIGHT CONTROLLER VERSIONS
-    #define ACCEL_X_OFFSET (0.0)
-    #define ACCEL_Y_OFFSET (0.0)
-    #define ACCEL_Z_OFFSET (0.0)
-
-    #define GYRO_X_OFFSET (0.0)
-    #define GYRO_Y_OFFSET (0.0)
-    #define GYRO_Z_OFFSET (0.0)
-*/
 
      #define ACC_SENSITIVITY_2G
 //     #define ACC_SENSITIVITY_4G
@@ -123,7 +102,23 @@
 
     #define FILTER_COMPARISONS 11 //number of sample comparisons for median filter
 
-/* ---------------------------------------AIO PROTOTYPE FLIGHT CONTROLLER CONFIGURATION-------------------------------------------- */
+
+
+/*    THIS SECTION IS PREDEFINED ACCORDING TO AIO PCB VERSION     */
+//    #define MPU6050_69
+//    #define MPU6050_68
+
+/* //  IMU OFFSET CONFIGURATION
+    #define ACCEL_X_OFFSET (0.0)
+    #define ACCEL_Y_OFFSET (0.0)
+    #define ACCEL_Z_OFFSET (0.0)
+
+    #define GYRO_X_OFFSET (0.0)
+    #define GYRO_Y_OFFSET (0.0)
+    #define GYRO_Z_OFFSET (0.0)
+*/
+
+/* ————————————————————————————————————————AIO PROTOTYPE FLIGHT CONTROLLER CONFIGURATION—————————————————————————————————————————— */
 
 #ifdef AIO_v03
 /*    VERSION 0.3  ***OLD VERSION***   Orange Bottom Mount 3D Printed Frame — v1
@@ -179,27 +174,7 @@
   
 #endif
 
-/* ---------------------------------------------REMOTE CONTROL CONFIGURATION-------------------------------------------------------- */
-
-//  TRANSMITTER GIMBAL/SWITCH OUTPUT VALUES
-    #define MINTHROTTLE 172 //minmum throttle output
-    #define MAXTHROTTLE 1811 //maximum throttle output
-
-
-//  SWITCH OUTPUTS
-    #define ARM 1                       //  TBD
-    #define MODE 2                      //  TBD
-    #define BEEP 3                      //  TBD
-    #define FAILSAFE 4                  //  TBD
-
-//  SET QUADCOPTER ROATATIONAL RATE
-    #define RC_RATES 180 // Maximum rotation speed: 180 degrees per second (speed dictated by RX ——> monitored by IMU)
-
-//  CONVERTS GIMBAL OUTPUT TO EXPONENTIAL FUNCTION - increase stick sensitivity the further you move from the 
-//  #define SUPER_RATE 0.0333; //applies cubic function to remote controller output values
-//  #define SUPER_RATE 0.025;
-
-/* -----------------------------------------CUSTOM VARIABLE STRUCTURE CONFIGURATION--------------------------------------------------- */
+/* ———————————————————————————————————————————————CUSTOM VARIABLE STRUCTURE CONFIGURATION————————————————————————————————————————————————— */
 
 typedef struct {
   int16_t x, y, z;
