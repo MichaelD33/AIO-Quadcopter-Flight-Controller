@@ -1,14 +1,15 @@
 /*
- *  AIO_FlightController - An integrated quadcopter flight controller program for the Arduino platform.
+ *  The AIO Flight Controller - An integrated quadcopter flight controller program for the Arduino platform.
+ *  
  *  Copyright © 2018-2019 Michael Delaney. All rights reserved.
  * 
- *  This device takes orientation data from an inertial measurement unit and input from an external remote to adjust 
- *  its position by varying the speed of its motors according to calculations made by the control loop.
+ *  This program takes orientation data from an inertial measurement unit in addition to input from an external remote 
+ *  in order to adjust its position by varying the speed of its motors according to calculations made by the control loop.
  * 
  *  Source Code: https://github.com/MichaelD33/AIO-Quadcopter-Flight-Controller
  *  Design Files: https://github.com/MichaelD33/AIO-Quadcopter-Design
- *  
- *  A simple quadcopter flight controller in ~1500 lines of code
+
+    A simple quadcopter flight controller in ~1500 lines of code
 
     This program is part of the AIO Flight Controller.
     
@@ -64,6 +65,7 @@ bool lastArmState = false;
   #define ATMEGA32u4
 #endif
 
+
 /*  IF NOT USING THE AIO PCB, USE THE FORMAT SHOWN BELOW —— (MOTOR LOCATION REF. DIAGRAM ON GITHUB) */
 //  byte motorOutput[] = {[motor 1], [motor 2], [motor 3], [motor 4]}; 
 
@@ -102,18 +104,30 @@ void loop() {
        
     indexTime = micros();
     long lastSample = indexTime - lastStart;
-    Serial.print("Last Loop Duration: ");
-    Serial.print(lastSample);  
+
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 1){
+        Serial.print("Last Loop Duration: ");
+        Serial.print(lastSample);  
+      }
+    #endif
+    
     lastStart = indexTime;
 
     /*     ** IMU TIMING **       */   
     while((micros() - imuEndTime) < IMU_SAMPLETIME){
       indexTime = micros();
     }
-    
-    Serial.print(",\t IMU: ");
-    Serial.print(indexTime - imuEndTime);
-    imuEndTime = indexTime;  // record end time to use for sampling calculation    
+
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 1){
+        Serial.print(",\t IMU: ");
+        Serial.print(indexTime - imuEndTime);
+      }
+    #endif
+
+    imuEndTime = indexTime;  // record end time to use for sampling calculation  
+      
   #endif
 
    /*     ** IMU DATA COLLECTION **       */
@@ -135,10 +149,17 @@ void loop() {
           #ifdef LOOP_SAMPLING            
             while((micros() - pidEndTime) < PID_SAMPLETIME){
               indexTime = micros();
-            }    
-            Serial.print(",\t PID: ");
-            Serial.println(indexTime - pidEndTime);
-            pidEndTime = indexTime;     
+            }
+
+            #ifdef PRINT_SERIALDATA
+              if(chAux2() == 1){
+                Serial.print(",\t PID: ");
+                Serial.println(indexTime - pidEndTime);
+              }
+            #endif
+            
+            pidEndTime = indexTime;
+            
           #endif
 
           /*      ** PROCESS INPUT DATA **      */ 
@@ -188,6 +209,9 @@ void loop() {
   
     #ifdef PRINT_SERIALDATA
       printSerial(); // used for GUI application and debugging
+      if(chAux2() != 0){
+        Serial.println("");
+      }
     #endif
 
 }
