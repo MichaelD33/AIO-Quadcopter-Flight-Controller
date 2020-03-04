@@ -41,12 +41,21 @@ void readRx(){
      
 //    map switches to appropriate values
       swA = map(swA, MINTHROTTLE, MAXTHROTTLE, 0, 2);
-      // swB = map(swB, MINTHROTTLE, MAXTHROTTLE, 0, 2);
+      swB = map(swB, MINTHROTTLE, MAXTHROTTLE, 0, 2);
       // swC = map(swC, MINTHROTTLE, MAXTHROTTLE, 0, 2);
       // swD = map(swD, MINTHROTTLE, MAXTHROTTLE, 0, 2);
       
 
     }
+   
+    if(swB == 0){
+      Serial.print(rollRx);
+      Serial.print(",");
+      Serial.print(pitchRx);
+      Serial.print(",");
+      Serial.print(yawRx);
+    }
+    
 }
 
 
