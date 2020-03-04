@@ -1,15 +1,9 @@
 /*
-    // The PID Controller is used to understand how much to correct the speed of the motors in order to achieve desired angle/direction
-    // Each axis needs their own PID controller
-    // Calculates error based on difference between sensor reading and pilot commands
-    // Proportional term depends on present error
-    // Integral term depends on accumulation of past errors
-    // Derivative? --> maybe don't integrate because it is very suseptible to noise
+    The PID Controller makes adjustments to the motor speeds in order to adjust orientation in the desired angle/direction
 */
 #include "pid.h"
 #include "config.h"
 
-//float throttleGain = 0.0023;
 float outputX, outputY, outputZ;
 unsigned long lastTime, currentT;
 
@@ -35,7 +29,6 @@ void computePids(){
 
     #ifndef LOOP_SAMPLING
       currentT = micros();
-      long timeChange = (currentT - lastTime);
     #endif
     
     #ifdef HORIZON
@@ -55,11 +48,28 @@ void computePids(){
     // compute all the working error vars
     // read rotational rate data (°/s) from remote and set it to the desired angle
 
+
+
     error.x = (-1 * chRoll())  - currentAngle.x;                      //present error
     error.y = (-1 * chPitch()) - currentAngle.y;
     error.z = chYaw()          - currentAngle.z;
 
+/*
+    if(chAux2() == 0){ 
+      error.x = 45 - currentAngle.x;    // setting a fixed error value for step response
+      error.y = currentAngle.y;
+      error.z = chYaw()- currentAngle.z;
+    }else{
+      error.x = (-1 * chRoll())  - currentAngle.x;                      
+      error.y = (-1 * chPitch()) - currentAngle.y;
+      error.z = chYaw()          - currentAngle.z; 
+    }
+*/
+    
     #ifndef LOOP_SAMPLING
+    
+    long timeChange = (currentT - lastTime);
+    
     errorSum.x += error.x * timeChange;                               //integral of error
     errorSum.y += error.y * timeChange;
     errorSum.z += error.z * timeChange;
@@ -108,6 +118,18 @@ void computePids(){
     outputZ = (KpZ * error.z + Iz - KdZ * deltaError.z);
 
 /*
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 0){
+        Serial.print(",");
+        Serial.print(outputX);
+        Serial.print(",");
+        Serial.print(outputY);
+        Serial.print(",");
+        Serial.print(outputZ);
+      }
+    #endif
+
+
     //removed integral clamping
     outputX = (KpX * error.x + KiX * errorSum.x - KdX * deltaError.x);
     outputY = (KpY * error.y + KiY * errorSum.y - KdY * deltaError.y);
