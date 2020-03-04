@@ -44,10 +44,3 @@ The micro scale design of the all-in-one(AIO) frame leads to stability issues be
 * Changes in Mass
 
 ---
-
-### Next Steps
-
-* expand upon the available sensor options and remote protocols
-* introduce basic implementation for other microcontrollers
-* buzzer activation on failsafe activation
-* flight mode configuration
