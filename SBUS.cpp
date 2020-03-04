@@ -99,22 +99,9 @@ void SBUS::UpdateChannels(){
   channels[12] = ((sbusData[17]>>4|sbusData[18]<<4) & 0x07FF);
   channels[13] = ((sbusData[18]>>7|sbusData[19]<<1|sbusData[20]<<9) & 0x07FF);
   channels[14] = ((sbusData[20]>>2|sbusData[21]<<6) & 0x07FF);
-    channels[15] = ((sbusData[21]>>5|sbusData[22]<<3) & 0x07FF);
+  channels[15] = ((sbusData[21]>>5|sbusData[22]<<3) & 0x07FF);
   #endif
-  // DigiChannel 1
-  /*if (sbusData[23] & (1<<0)) {
-    channels[16] = 1;
-  }
-  else{
-    channels[16] = 0;
-  }
-  // DigiChannel 2
-  if (sbusData[23] & (1<<1)) {
-    channels[17] = 1;
-  }
-  else{
-    channels[17] = 0;
-  }*/
+
   // Failsafe
   failsafe_status = SBUS_SIGNAL_OK;
   if (sbusData[23] & (1<<2)) {
