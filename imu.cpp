@@ -15,14 +15,15 @@
 #include <Math.h>
 #include <Wire.h>
 #include "imu.h"
+#include "RX.h"
 
 static axis_float_t angle; // angle calculated using accelerometer
 static axis_int16_t gyroRates;
 
-float roll, pitch, TmpRaw;
+float roll, pitch, yaw, TmpRaw;
 int AcXRaw,AcYRaw,AcZRaw,GyXRaw,GyYRaw,GyZRaw;
 
-int delta_t;
+float delta_t;
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
 
@@ -127,7 +128,7 @@ void processGyro(){
 
 void processAcc(){
     //filtering accelerometer noise using a median filter
-
+#ifdef HORIZON
     axis_float_t accel_filtered; // filtered accelerometer raw values
    
     median_filter_in(accel_x_filter, AcXRaw);
@@ -138,21 +139,23 @@ void processAcc(){
     accel_filtered.y = (median_filter_out(accel_y_filter));
     accel_filtered.z = (median_filter_out(accel_z_filter));
 
-    roll = (atan2(accel_filtered.x, sqrt((accel_filtered.y*accel_filtered.y)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
-    pitch = (atan2(accel_filtered.y, sqrt((accel_filtered.x*accel_filtered.x)+(accel_filtered.z*accel_filtered.z)))*180)/M_PI; 
-
+    roll = (atan2(accel_filtered.x, sqrt((accel_filtered.y * accel_filtered.y) + (accel_filtered.z * accel_filtered.z))) * 180) / M_PI; 
+    pitch = (atan2(accel_filtered.y, sqrt((accel_filtered.x * accel_filtered.x) + (accel_filtered.z * accel_filtered.z))) * 180) / M_PI; 
+    //yaw = 
+    
 //    roll = (atan2(accel_filtered.x, accel_filtered.z)*180)/M_PI; // -180° --> 180°
 //    pitch = (atan2(accel_filtered.y, accel_filtered.z)*180)/M_PI; // -180° --> 180°
-
+#endif
 }
 
 void imuCombine(){
 
   #ifdef LOOP_SAMPLING
 
-     angle.y = GYRO_PART * (angle.y + ((gyroRates.x / GYRO_SENS) * (IMU_SAMPLETIME))) + (1-GYRO_PART) * pitch; //complementary filter
-     angle.x = GYRO_PART * (angle.x + ((gyroRates.y / GYRO_SENS) * (IMU_SAMPLETIME))) + (1-GYRO_PART) * roll;
-     angle.z = ((gyroRates.z / GYRO_SENS) * (IMU_SAMPLETIME));
+     angle.y = GYRO_PART * (angle.y + (gyroRates.x * PID_SAMPLETIME_S)) + (1-GYRO_PART) * pitch; //complementary filter
+     angle.x = GYRO_PART * (angle.x + (gyroRates.y * PID_SAMPLETIME_S)) + (1-GYRO_PART) * roll;
+     //angle.z = angle.z + (gyroRates.z * PID_SAMPLETIME_S);
+     angle.z = (gyroRates.z * PID_SAMPLETIME_S);
 
   #else
      currentTime = micros();
@@ -163,6 +166,28 @@ void imuCombine(){
      angle.z = (gyroRates.z * delta_t);     
      
      previousTime = currentTime;
+  #endif
+
+  #ifdef PRINT_SERIALDATA
+    if(chAux2() == 2){
+       //Serial.print("X-Angle: ");
+       Serial.print(angle.x);
+  
+       Serial.print(",");
+       Serial.print(angle.y);
+  
+       Serial.print(",");
+       Serial.print(angle.z);
+    }
+    
+    if(chAux2() == 0){
+       Serial.print(",");
+       Serial.print(angle.x);
+       Serial.print(",");
+       Serial.print(angle.y);
+       Serial.print(",");
+       Serial.println(angle.z);
+    }
   #endif
    
 }
