@@ -13,8 +13,7 @@
 /* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
 /*  STABILIZATION MODE  */
-    #define HORIZON
-//    #define ACRO                      
+    #define HORIZON // This is the only supported stabilization mode (at the moment)... Do not change.
 
 /* FLIGHT CONTROLLER BOARD CONFIG */
 //  #define AIO_v01   // LEGACY
@@ -35,35 +34,36 @@
 //  SET QUADCOPTER ROATATIONAL RATE
     #define RC_RATES 180 // Maximum rotation speed: 180 degrees per second
 
-/* ———————————————————————————————————————————————PID CONTROLLER CONFIGURATION———————————————————————————————————————————————— */
+/* ———————————————————————————————————————————————PROGRAM CONFIGURATION———————————————————————————————————————————————— */
 
     #ifdef LOOP_SAMPLING
       #define SAMPLETIME 10000 //define loop sample time at a frequency of 3000µs
       #define SAMPLETIME_S 0.01
     #endif
     
-    #define MAX_INTEGRAL 230  //  integral clamping to avoid writing values outside the range of pwm output
-  
-/* ————————————————————————————————————————————————MOTOR OUTPUT CONFIGURATION———————————————————————————————————————————————— */
-
-//  SPEED CONTROLLER TYPE
-    #define BRUSHED
-
-// SPEED CONTROLLER CONFIG
-    #define ESC_TOLERANCE 0.9        // THROTTLE MAX = (ESC_MAX * ESC_TOLERANCE)
-    #define ESC_MAX 255              // 255 for BRUSHED MOTORS
-    #define ESC_MIN 0                // 0 for BRUSHED MOTORS
 
 /* ———————————————————————————————————————————INERTIAL MEASURMENT UNIT CONFIGURATION—————————————————————————————————————————— */
 
-//  IMU COMMUNICATION SETTINGS
-//   #define I2C_STANDARD     
+     //  I2C communication settings
      #define I2C_FASTMODE
 
-     #define DIGITAL_LOW_PASS_FILTER //comment this line out to deactivate the MPU6050 digital low pass filter 
-//     #define DLPF_BANDWIDTH 3  // filtration bandwith configuration (coming soon)
+      // Configuring IMU offsets for the MPU6050
+      #ifdef AIO_v041
+        /*    VERSION 0.4.1    7x20mm Motors   — Black PCB in Red Frame      */
+      
+          #define ACCEL_X_OFFSET (933)
+          #define ACCEL_Y_OFFSET (-776)
+          #define ACCEL_Z_OFFSET (1160)
+      
+          #define GYRO_X_OFFSET (108)
+          #define GYRO_Y_OFFSET (13)
+          #define GYRO_Z_OFFSET (-4)
+          
+      #endif
 
-
+/*
+ *   These parameters are not used in the flight control firmwqre
+ * 
      #define ACC_SENSITIVITY_2G
 //     #define ACC_SENSITIVITY_4G
 //     #define ACC_SENSITIVITY_8G
@@ -87,98 +87,22 @@
 //      #define GYRO_SENSITIVITY_2000
         #ifdef GYRO_SENSITIVITY_2000
          #define GYRO_SENS 16.4
-       #endif     
-    
-    #define ACC_PART (1.0 - GYRO_PART)
-    #define GYRO_PART 0.985
-
-    #define FILTER_COMPARISONS 15 //number of sample comparisons for median filter
-
-
-
-/*    THIS SECTION IS PREDEFINED ACCORDING TO AIO PCB VERSION     */
-//    #define MPU6050_69
-//    #define MPU6050_68
-
-/* //  IMU OFFSET CONFIGURATION
-    #define ACCEL_X_OFFSET (0.0)
-    #define ACCEL_Y_OFFSET (0.0)
-    #define ACCEL_Z_OFFSET (0.0)
-
-    #define GYRO_X_OFFSET (0.0)
-    #define GYRO_Y_OFFSET (0.0)
-    #define GYRO_Z_OFFSET (0.0)
+       #endif
 */
 
-/* ————————————————————————————————————————AIO PROTOTYPE FLIGHT CONTROLLER CONFIGURATION—————————————————————————————————————————— */
 
-#ifdef AIO_v03
-/*    VERSION 0.3  ***OLD VERSION***   Orange Bottom Mount 3D Printed Frame — v1
-    #define ACCEL_X_OFFSET (1630.0)
-    #define ACCEL_Y_OFFSET (-1359.0)
-    #define ACCEL_Z_OFFSET (869.0)
+/* ————————————————————————————————————————————————MOTOR OUTPUT CONFIGURATION———————————————————————————————————————————————— */
 
-    #define GYRO_X_OFFSET (16.0)
-    #define GYRO_Y_OFFSET (26.0)
-    #define GYRO_Z_OFFSET (40.0)
-    
-    #define MPU6050_69  
-*/
+// SPEED CONTROLLER CONFIG
+    #define ESC_TOLERANCE 0.9        // THROTTLE MAX = (ESC_MAX * ESC_TOLERANCE)
+    #define ESC_MAX 255              // 255 for BRUSHED MOTORS
+    #define ESC_MIN 0                // 0 for BRUSHED MOTORS
 
-/*    VERSION 0.3   Purple 3D Printed Frame v2 && 7x20mm Motors   */
-    #define ACCEL_X_OFFSET (2189.0)
-    #define ACCEL_Y_OFFSET (2770.0)
-    #define ACCEL_Z_OFFSET (1100.0)
 
-    #define GYRO_X_OFFSET (97.0)
-    #define GYRO_Y_OFFSET (-56.0)
-    #define GYRO_Z_OFFSET (-64.0)
-    
-    #define MPU6050_68
+/* ———————————————————————————————————————————————PID CONTROLLER CONFIGURATION———————————————————————————————————————————————— */
 
-#endif
+    #define MAX_INTEGRAL 230  //  integral clamping to avoid writing values outside the range of pwm output
 
-#ifdef AIO_v04
-/*    VERSION 0.4    7x16mm Motors  — Bare Red PCB Version            */
-    #define ACCEL_X_OFFSET (-1822.0)
-    #define ACCEL_Y_OFFSET (-2715.0)
-    #define ACCEL_Z_OFFSET (853.0)
-
-    #define GYRO_X_OFFSET (32.0)
-    #define GYRO_Y_OFFSET (-86.0)
-    #define GYRO_Z_OFFSET (-12.0) 
-
-    #define MPU6050_68
-    
-#endif
-
-#ifdef AIO_v041
-    /*    VERSION 0.4.1    7x20mm Motors   — Red Shapeways Frame      
-    #define ACCEL_X_OFFSET (1001)
-    #define ACCEL_Y_OFFSET (316)
-    #define ACCEL_Z_OFFSET (1274)
-
-    #define GYRO_X_OFFSET (42)
-    #define GYRO_Y_OFFSET (10)
-    #define GYRO_Z_OFFSET (25)
-
-    #define MPU6050_68
-
-  */
-  
-  /*    VERSION 0.4.1    7x20mm Motors   — Black PCB in Red Frame      */
-
-    #define ACCEL_X_OFFSET (933)
-    #define ACCEL_Y_OFFSET (-776)
-    #define ACCEL_Z_OFFSET (1160)
-
-    #define GYRO_X_OFFSET (108)
-    #define GYRO_Y_OFFSET (13)
-    #define GYRO_Z_OFFSET (-4)
-
-    #define MPU6050_68
-    
-#endif
 
 /* ———————————————————————————————————————————————CUSTOM VARIABLE STRUCTURE CONFIGURATION————————————————————————————————————————————————— */
 
