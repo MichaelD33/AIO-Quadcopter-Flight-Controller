@@ -98,7 +98,7 @@ void loop() {
   #ifdef LOOP_SAMPLING
 
     /*     ** LOOP TIMING **      */         
-    while((micros() - lastStart) < LOOP_SAMPLETIME){
+    while((micros() - lastStart) < SAMPLETIME){
       indexTime = micros();
     }
        
@@ -115,7 +115,7 @@ void loop() {
     lastStart = indexTime;
 
     /*     ** IMU TIMING **       */   
-    while((micros() - imuEndTime) < IMU_SAMPLETIME){
+    while((micros() - imuEndTime) < SAMPLETIME){
       indexTime = micros();
     }
 
@@ -147,7 +147,7 @@ void loop() {
 
           /*      ** PID TIMING **      */ 
           #ifdef LOOP_SAMPLING            
-            while((micros() - pidEndTime) < PID_SAMPLETIME){
+            while((micros() - pidEndTime) < SAMPLETIME){
               indexTime = micros();
             }
 

@@ -14,7 +14,7 @@
 
 /*  STABILIZATION MODE  */
     #define HORIZON
-//  #define ACRO                      
+//    #define ACRO                      
 
 /* FLIGHT CONTROLLER BOARD CONFIG */
 //  #define AIO_v01   // LEGACY
@@ -24,7 +24,6 @@
 
 /* DIY FLIGHT CONTROLLER CONFIG (ADDITIONAL SETUP MAY BE REQUIRED) */
 //  #define ATMEGA32u4
-/*  #define ATMEGA328 */ // NOT CONFIGURED
 
 /* ———————————————————————————————————————————————————REMOTE CONTROL CONFIGURATION—————————————————————————————————————————————————————— */
 
@@ -33,21 +32,14 @@
     #define MAXTHROTTLE 1811 // maximum throttle output
 
 
-//  SWITCH OUTPUTS
-    #define ARM 1                       //  TBD
-    #define MODE 2                      //  TBD
-    #define BEEP 3                      //  TBD
-    #define FAILSAFE 4                  //  TBD
-
 //  SET QUADCOPTER ROATATIONAL RATE
     #define RC_RATES 180 // Maximum rotation speed: 180 degrees per second
 
 /* ———————————————————————————————————————————————PID CONTROLLER CONFIGURATION———————————————————————————————————————————————— */
 
     #ifdef LOOP_SAMPLING
-      #define LOOP_SAMPLETIME 3000 //define loop sample time at a frequency of 3000µs
-      #define PID_SAMPLETIME 3000 
-      #define IMU_SAMPLETIME 3000
+      #define SAMPLETIME 10000 //define loop sample time at a frequency of 3000µs
+      #define SAMPLETIME_S 0.01
     #endif
     
     #define MAX_INTEGRAL 230  //  integral clamping to avoid writing values outside the range of pwm output
@@ -98,9 +90,9 @@
        #endif     
     
     #define ACC_PART (1.0 - GYRO_PART)
-    #define GYRO_PART 0.975
+    #define GYRO_PART 0.985
 
-    #define FILTER_COMPARISONS 11 //number of sample comparisons for median filter
+    #define FILTER_COMPARISONS 15 //number of sample comparisons for median filter
 
 
 
@@ -161,7 +153,7 @@
 #endif
 
 #ifdef AIO_v041
-    /*    VERSION 0.4.1    7x20mm Motors   — Red Shapeways Frame      */
+    /*    VERSION 0.4.1    7x20mm Motors   — Red Shapeways Frame      
     #define ACCEL_X_OFFSET (1001)
     #define ACCEL_Y_OFFSET (316)
     #define ACCEL_Z_OFFSET (1274)
@@ -171,7 +163,21 @@
     #define GYRO_Z_OFFSET (25)
 
     #define MPU6050_68
+
+  */
   
+  /*    VERSION 0.4.1    7x20mm Motors   — Black PCB in Red Frame      */
+
+    #define ACCEL_X_OFFSET (933)
+    #define ACCEL_Y_OFFSET (-776)
+    #define ACCEL_Z_OFFSET (1160)
+
+    #define GYRO_X_OFFSET (108)
+    #define GYRO_Y_OFFSET (13)
+    #define GYRO_Z_OFFSET (-4)
+
+    #define MPU6050_68
+    
 #endif
 
 /* ———————————————————————————————————————————————CUSTOM VARIABLE STRUCTURE CONFIGURATION————————————————————————————————————————————————— */
