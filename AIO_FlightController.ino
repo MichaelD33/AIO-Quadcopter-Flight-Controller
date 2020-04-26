@@ -1,7 +1,7 @@
 /*
  *  The AIO Flight Controller - An integrated quadcopter flight controller program for the Arduino platform.
  *  
- *  Copyright © 2018-2019 Michael Delaney. All rights reserved.
+ *  Copyright © 2018-2020 Michael Delaney. All rights reserved.
  * 
  *  This program takes orientation data from an inertial measurement unit in addition to input from an external remote 
  *  in order to adjust its position by varying the speed of its motors according to calculations made by the control loop.
