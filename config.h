@@ -8,7 +8,6 @@
 /* ——————————————————————————————————————————————————————DEBUGGING————————————————————————————————————————————————————————— */
 
   #define PRINT_SERIALDATA     // calls the printSerial() function in loop()
-  #define LOOP_SAMPLING      // enables loop sampling for fixed PID and IMU sampling rates as well as loop time profiling
 
 /* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
@@ -36,10 +35,8 @@
 
 /* ———————————————————————————————————————————————PROGRAM CONFIGURATION———————————————————————————————————————————————— */
 
-    #ifdef LOOP_SAMPLING
-      #define SAMPLETIME 10000 //define loop sample time at a frequency of 3000µs
-      #define SAMPLETIME_S 0.01
-    #endif
+    #define SAMPLETIME 10000 //define loop sample time at a frequency of 3000µs
+    #define SAMPLETIME_S 0.01
     
 
 /* ———————————————————————————————————————————INERTIAL MEASURMENT UNIT CONFIGURATION—————————————————————————————————————————— */

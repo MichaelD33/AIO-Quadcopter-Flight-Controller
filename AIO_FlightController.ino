@@ -3,7 +3,7 @@
  *  
  *  Copyright © 2018-2020 Michael Delaney. All rights reserved.
  * 
- *  This program takes orientation data from an inertial measurement unit in addition to input from an external remote 
+ *  This program takes orientation data from an inertial measurement unit and input from an external remote 
  *  in order to adjust its position by varying the speed of its motors according to calculations made by the control loop.
  * 
  *  Source Code: https://github.com/MichaelD33/AIO-Quadcopter-Flight-Controller
@@ -95,40 +95,38 @@ void setup() {
 
 void loop() {
 
-  #ifdef LOOP_SAMPLING
-
-    /*     ** LOOP TIMING **      */         
-    while((micros() - lastStart) < SAMPLETIME){
-      indexTime = micros();
-    }
+/*            ** LOOP TIMING **               */  
        
+  while((micros() - lastStart) < SAMPLETIME){
     indexTime = micros();
-    long lastSample = indexTime - lastStart;
+  }
+     
+  indexTime = micros();
+  long lastSample = indexTime - lastStart;
 
-    #ifdef PRINT_SERIALDATA
-      if(chAux2() == 1){
-        Serial.print("Last Loop Duration: ");
-        Serial.print(lastSample);  
-      }
-    #endif
-    
-    lastStart = indexTime;
-
-    /*     ** IMU TIMING **       */   
-    while((micros() - imuEndTime) < SAMPLETIME){
-      indexTime = micros();
+  #ifdef PRINT_SERIALDATA
+    if(chAux2() == 1){
+      Serial.print("Last Loop Duration: ");
+      Serial.print(lastSample);  
     }
-
-    #ifdef PRINT_SERIALDATA
-      if(chAux2() == 1){
-        Serial.print(",\t IMU: ");
-        Serial.print(indexTime - imuEndTime);
-      }
-    #endif
-
-    imuEndTime = indexTime;  // record end time to use for sampling calculation  
-      
   #endif
+  
+  lastStart = indexTime;
+
+  /*     ** IMU TIMING **       */   
+  while((micros() - imuEndTime) < SAMPLETIME){
+    indexTime = micros();
+  }
+
+  #ifdef PRINT_SERIALDATA
+    if(chAux2() == 1){
+      Serial.print(",\t IMU: ");
+      Serial.print(indexTime - imuEndTime);
+    }
+  #endif
+
+  imuEndTime = indexTime;  // record end time to use for sampling calculation  
+      
 
    /*     ** IMU DATA COLLECTION **       */
    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
@@ -145,22 +143,20 @@ void loop() {
 
         case 1: //if the arm  switch is set to 1, start the PID calculation
 
-          /*      ** PID TIMING **      */ 
-          #ifdef LOOP_SAMPLING            
-            while((micros() - pidEndTime) < SAMPLETIME){
-              indexTime = micros();
-            }
+          /*      ** PID TIMING **      */            
+          while((micros() - pidEndTime) < SAMPLETIME){
+            indexTime = micros();
+          }
 
-            #ifdef PRINT_SERIALDATA
-              if(chAux2() == 1){
-                Serial.print(",\t PID: ");
-                Serial.println(indexTime - pidEndTime);
-              }
-            #endif
-            
-            pidEndTime = indexTime;
-            
+          #ifdef PRINT_SERIALDATA
+            if(chAux2() == 1){
+              Serial.print(",\t PID: ");
+              Serial.println(indexTime - pidEndTime);
+            }
           #endif
+          
+          pidEndTime = indexTime;
+          
 
           /*      ** PROCESS INPUT DATA **      */ 
           initPids(); 
