@@ -37,12 +37,10 @@
 bool armState = false;
 bool lastArmState = false;
 
-#ifdef LOOP_SAMPLING
-  long indexTime;
-  long imuEndTime = 0;
-  long pidEndTime = 0;
-  long lastStart = 0;
-#endif
+long indexTime;
+long imuEndTime = 0;
+long pidEndTime = 0;
+long lastStart = 0;
 
 #ifdef AIO_v01 //prototype v0.1 configuration - LEGACY
   byte motorOutput[] = {9, 5, 10, 6};  
@@ -204,7 +202,6 @@ void loop() {
 
   
     #ifdef PRINT_SERIALDATA
-      printSerial(); // used for GUI application and debugging
       if(chAux2() != 0){
         Serial.println("");
       }
@@ -223,23 +220,4 @@ int armingState(){
 
 int lastArmingState(){
   return lastArmState;
-}
-  
-void printSerial(){
-
-/*
-
-  switch(chAux2()){
-    
-    case 0: break;
-
-    case 1: break;
-
-    case 2: break;
-
-    default: break;
-    
-  }
-*/
-    
 }
