@@ -4,12 +4,8 @@
 #include "pid.h"
 #include "config.h"
 
-//float Kp = 0.7;
-//float Ki = 0.015;
-//float Kd = 0;
-
-float Kp = 0.2;
-float Ki = 0;
+float Kp = 0.7;
+float Ki = 0.015;
 float Kd = 0;
 
 float KpZ = 0;
@@ -52,8 +48,8 @@ void computePids(){
     // read rotational rate data (°/s) from remote and set it to the desired angle
 
 
-    error.x = (-1 * chRoll())  - currentAngle.x;        //present error (instantaneous error)
-    error.y = (-1 * chPitch()) - currentAngle.y;
+    error.x = chRoll()  - currentAngle.x;        //present error (instantaneous error)
+    error.y = chPitch() - currentAngle.y;
     error.z = chYaw()          - currentAngle.z;
     
   
@@ -123,18 +119,25 @@ void computePids(){
         motorSpeed.four = ESC_MIN;
        }else{ } 
 
-    if(chAux2() == 0){
-      Serial.print("IMU Roll: ");      
-      Serial.print(imu_angles().x);
-      Serial.print("IMU Pitch: ");      
-      Serial.print(imu_angles().y);
-      Serial.print(", Kp: ");
-      Serial.print(Kp);
-      Serial.print(", Ki: ");
-      Serial.print(Ki, 4);
-      Serial.print(", Kd: ");
-      Serial.print(Kd);
+//    if(chAux2() == 0){
+//      Serial.print("IMU Roll: ");      
+//      Serial.print(imu_angles().x);
+//      Serial.print("IMU Pitch: ");      
+//      Serial.print(imu_angles().y);
+//      Serial.print(", Kp: ");
+//      Serial.print(Kp);
+//      Serial.print(", Ki: ");
+//      Serial.print(Ki, 4);
+//      Serial.print(", Kd: ");
+//      Serial.print(Kd);
+//
+//    }
 
+    if(chAux2() == 0){
+      Serial.print("outputX: ");
+      Serial.print(outputX);
+      Serial.print(", outputY: ");
+      Serial.print(outputY);
     }
            
 }
