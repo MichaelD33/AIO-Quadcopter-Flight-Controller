@@ -181,7 +181,14 @@ void readIMU(){
               Serial.print(", Pitch:");
               Serial.print(angle.y);
               Serial.print(", Yaw:");
-              Serial.println(angle.z);
+              Serial.print(angle.z);
+
+              Serial.print(", \t RX Roll: ");
+              Serial.print(chRoll());
+              Serial.print(", RX Pitch: ");
+              Serial.print(chPitch());
+              Serial.print(", RX Yaw: ");
+              Serial.println(chYaw());
             }
           #endif
 
