@@ -57,15 +57,6 @@ void readRx(){
       
 
     }
-   
-    if(swB == 0){
-      Serial.print("RX Roll: ");
-      Serial.print(rollRx);
-      Serial.print(", RX Pitch: ");
-      Serial.print(pitchRx);
-      Serial.print(", RX Yaw: ");
-      Serial.print(yawRx);
-    }
     
 }
 
