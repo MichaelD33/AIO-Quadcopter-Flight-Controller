@@ -4,8 +4,19 @@
 #include "pid.h"
 #include "config.h"
 
+//float Kp = 0.7;
+//float Ki = 0.015;
+//float Kd = 0;
+
+float Kp = 0.2;
+float Ki = 0;
+float Kd = 0;
+
+float KpZ = 0;
+float KiZ = 0;
+float KdZ = 0;
+
 float outputX, outputY, outputZ;
-unsigned long lastTime, currentT;
 
 axis_int16_t desiredAngle;
 axis_float_t currentAngle, lastAngle;
@@ -21,7 +32,10 @@ void initPids(){
     lastAngle.x = currentAngle.x;
     lastAngle.y = currentAngle.y;
     lastAngle.z = currentAngle.z;
-    lastTime = currentT;
+
+//    Kp = (0.7);
+//    Ki = (0 + (2*chAuxPot1()) + (4*chAuxPot2())) * SAMPLETIME_S;
+    Kd = (0 + (chAuxPot1()/5) + (chAuxPot2()/4)) / SAMPLETIME_S;
 } 
     
 
@@ -43,51 +57,46 @@ void computePids(){
     error.z = chYaw()          - currentAngle.z;
     
   
-    errorSum.x += error.x;                              //integral of error (total accumulation of error)
-    errorSum.y += error.y;
-    errorSum.z += error.z;
+    errorSum.x += Ki * error.x;                              //integral of error (total accumulation of error)
+    errorSum.y += Ki * error.y;
+    errorSum.z += KiZ * error.z;
 
     
     deltaError.x = currentAngle.x - lastAngle.x;        //derivative of error (change in error)
     deltaError.y = currentAngle.y - lastAngle.y; 
     deltaError.z = currentAngle.z - lastAngle.z; 
       
-    
-    //compute integral
-    float Ix = KiX * errorSum.x;
-    float Iy = KiY * errorSum.y;
-    float Iz = KiZ * errorSum.z;
 
     
     //clamp the range of integral values
-    if(Ix > MAX_INTEGRAL){ 
-      Ix = MAX_INTEGRAL; 
-    }else if (Ix < (MAX_INTEGRAL * -1)){
-      Ix = MAX_INTEGRAL * -1;
+    if(errorSum.x > MAX_INTEGRAL){ 
+      errorSum.x = MAX_INTEGRAL; 
+    }else if (errorSum.x < (MAX_INTEGRAL * -1)){
+      errorSum.x = MAX_INTEGRAL * -1;
     }
         
-    if(Iy > MAX_INTEGRAL){ 
-      Iy = MAX_INTEGRAL; 
-    }else if (Iy < (MAX_INTEGRAL * -1)){
-      Iy = MAX_INTEGRAL * -1;
+    if(errorSum.y > MAX_INTEGRAL){ 
+      errorSum.y = MAX_INTEGRAL; 
+    }else if (errorSum.y < (MAX_INTEGRAL * -1)){
+      errorSum.y = MAX_INTEGRAL * -1;
     }
         
-    if(Iz > MAX_INTEGRAL){ 
-      Iz = MAX_INTEGRAL; 
-    }else if (Iz < (MAX_INTEGRAL * -1)){
-      Iz = MAX_INTEGRAL * -1;
+    if(errorSum.z > MAX_INTEGRAL){ 
+      errorSum.z = MAX_INTEGRAL; 
+    }else if (errorSum.z < (MAX_INTEGRAL * -1)){
+      errorSum.z = MAX_INTEGRAL * -1;
     }
 
-    outputX = (KpX * error.x + Ix - KdX * deltaError.x);
-    outputY = (KpY * error.y + Iy - KdY * deltaError.y);
-    outputZ = (KpZ * error.z + Iz - KdZ * deltaError.z);
+    outputX = (Kp * error.x + errorSum.x - Kd * deltaError.x);
+    outputY = (Kp * error.y + errorSum.y - Kd * deltaError.y);
+    outputZ = (KpZ * error.z + errorSum.z - KdZ * deltaError.z);
  
   
     //write outputs to corresponding motors at the corresponding speed
-     motorSpeed.one = abs(chThrottle() + outputX - outputY - outputZ); 
-     motorSpeed.two = abs(chThrottle() - outputX - outputY + outputZ); 
-     motorSpeed.three = abs(chThrottle() - outputX + outputY - outputZ);
-     motorSpeed.four = abs(chThrottle() + outputX + outputY + outputZ);
+     motorSpeed.one = abs(chThrottle() - outputX + outputY - outputZ); 
+     motorSpeed.two = abs(chThrottle() + outputX + outputY + outputZ); 
+     motorSpeed.three = abs(chThrottle() + outputX - outputY - outputZ);
+     motorSpeed.four = abs(chThrottle() - outputX - outputY + outputZ);
      
      //clamp the min and max output from the pid controller (to match the needed 0-255 for pwm)
      if(motorSpeed.one > ESC_MAX){
@@ -113,8 +122,23 @@ void computePids(){
        }else if (motorSpeed.four < ESC_MIN){
         motorSpeed.four = ESC_MIN;
        }else{ } 
+
+    if(chAux2() == 0){
+      Serial.print("IMU Roll: ");      
+      Serial.print(imu_angles().x);
+      Serial.print("IMU Pitch: ");      
+      Serial.print(imu_angles().y);
+      Serial.print(", Kp: ");
+      Serial.print(Kp);
+      Serial.print(", Ki: ");
+      Serial.print(Ki, 4);
+      Serial.print(", Kd: ");
+      Serial.print(Kd);
+
+    }
            
 }
+
 
 void resetPids(){
 
