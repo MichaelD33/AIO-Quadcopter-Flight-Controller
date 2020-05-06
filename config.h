@@ -7,7 +7,7 @@
 
 /* ——————————————————————————————————————————————————————DEBUGGING————————————————————————————————————————————————————————— */
 
-  #define PRINT_SERIALDATA     // calls the printSerial() function in loop()
+  #define PRINT_SERIALDATA     // enables the serial monitor and serial debugging via the remote's switches
 
 /* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
@@ -21,17 +21,17 @@
     #define AIO_v041  // CURRENT REVISION (+5V enabled)
 
 /* DIY FLIGHT CONTROLLER CONFIG (ADDITIONAL SETUP MAY BE REQUIRED) */
-//  #define ATMEGA32u4
+//  #define CUSTOM_FC
 
 /* ———————————————————————————————————————————————————REMOTE CONTROL CONFIGURATION—————————————————————————————————————————————————————— */
 
 //  TRANSMITTER GIMBAL/SWITCH OUTPUT VALUES
-    #define MINTHROTTLE 172 //  minimum throttle output
-    #define MAXTHROTTLE 1811 // maximum throttle output
+    #define MINTHROTTLE 172   // minimum throttle output
+    #define MAXTHROTTLE 1811  // maximum throttle output
 
 
 //  SET QUADCOPTER ROATATIONAL RATE
-    #define RC_RATES 180 // Maximum rotation speed: 180 degrees per second
+    #define RC_RATES 90 // Maximum rotation: 90 degrees (in order to prevent the device from flipping over)
 
 /* ———————————————————————————————————————————————PROGRAM CONFIGURATION———————————————————————————————————————————————— */
 
@@ -45,47 +45,19 @@
      #define I2C_FASTMODE
 
       // Configuring IMU offsets for the MPU6050
+
+      /*    VERSION 0.4.1    7x20mm Motors   —  White Frame */
       #ifdef AIO_v041
-        /*    VERSION 0.4.1    7x20mm Motors   — Black PCB in Red Frame      */
+        
+          #define ACCEL_X_OFFSET (-4803)
+          #define ACCEL_Y_OFFSET (-212)
+          #define ACCEL_Z_OFFSET (740)
       
-          #define ACCEL_X_OFFSET (933)
-          #define ACCEL_Y_OFFSET (-776)
-          #define ACCEL_Z_OFFSET (1160)
-      
-          #define GYRO_X_OFFSET (108)
-          #define GYRO_Y_OFFSET (13)
-          #define GYRO_Z_OFFSET (-4)
+          #define GYRO_X_OFFSET (145)
+          #define GYRO_Y_OFFSET (-17)
+          #define GYRO_Z_OFFSET (24)
           
       #endif
-
-/*
- *   These parameters are not used in the flight control firmwqre
- * 
-     #define ACC_SENSITIVITY_2G
-//     #define ACC_SENSITIVITY_4G
-//     #define ACC_SENSITIVITY_8G
-//     #define ACC_SENSITIVITY_16G
-
-//      #define GYRO_SENSITIVITY_250
-        #ifdef GYRO_SENSITIVITY_250
-          #define GYRO_SENS 131
-        #endif
-        
-      #define GYRO_SENSITIVITY_500
-        #ifdef GYRO_SENSITIVITY_500
-          #define GYRO_SENS 65.6
-        #endif
-        
-//      #define GYRO_SENSITIVITY_1000
-        #ifdef GYRO_SENSITIVITY_1000
-          #define GYRO_SENS 32.8
-        #endif
-        
-//      #define GYRO_SENSITIVITY_2000
-        #ifdef GYRO_SENSITIVITY_2000
-         #define GYRO_SENS 16.4
-       #endif
-*/
 
 
 /* ————————————————————————————————————————————————MOTOR OUTPUT CONFIGURATION———————————————————————————————————————————————— */
