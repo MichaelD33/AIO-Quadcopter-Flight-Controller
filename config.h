@@ -7,7 +7,7 @@
 
 /* ——————————————————————————————————————————————————————DEBUGGING————————————————————————————————————————————————————————— */
 
-  #define PRINT_SERIALDATA     // enables the serial monitor and serial debugging via the remote's switches
+ #define PRINT_SERIALDATA     // enables the serial monitor and serial debugging via the remote's switches
 
 /* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
@@ -38,7 +38,6 @@
     #define SAMPLETIME 10000 //define loop sample time at a frequency of 3000µs
     #define SAMPLETIME_S 0.01
     
-
 /* ———————————————————————————————————————————INERTIAL MEASURMENT UNIT CONFIGURATION—————————————————————————————————————————— */
 
      //  I2C communication settings
@@ -88,7 +87,7 @@ typedef struct {
 } axis_float_t;
 
 typedef struct {
-  uint8_t one, two, three, four;
+  int16_t one, two, three, four;
 } int_pwmOut;
 
 void writeMotor(int, float);
