@@ -3,7 +3,7 @@
  *  
  *  Copyright © 2018-2020 Michael Delaney. All rights reserved.
  * 
- *  This program takes orientation data from an inertial measurement unit and input from an external remote 
+ *  This program takes orientation data from an inertial measurement unit in addition to input from an external remote 
  *  in order to adjust its position by varying the speed of its motors according to calculations made by the control loop.
  * 
  *  Source Code: https://github.com/MichaelD33/AIO-Quadcopter-Flight-Controller
@@ -64,11 +64,6 @@ long lastStart = 0;
   #define ATMEGA32u4
 #endif
 
-#ifdef CUSTOM_FC // define motor pinout for custom flight controller
-//  byte motorOutput[] = { w, x, y, z };  
-  #define ATMEGA32u4
-#endif
-
 
 /*  IF NOT USING THE AIO PCB, USE THE FORMAT SHOWN BELOW —— (MOTOR LOCATION REF. DIAGRAM ON GITHUB) */
 //  byte motorOutput[] = {[motor 1], [motor 2], [motor 3], [motor 4]}; 
@@ -99,37 +94,36 @@ void setup() {
 
 void loop() {
 
-/*            ** LOOP TIMING **               */  
+    /*     ** LOOP TIMING **      */         
+    while((micros() - lastStart) < SAMPLETIME){
+      indexTime = micros();
+    }
        
-  while((micros() - lastStart) < SAMPLETIME){
     indexTime = micros();
-  }
-     
-  indexTime = micros();
-  long lastSample = indexTime - lastStart;
-
-  #ifdef PRINT_SERIALDATA
-    if(chAux2() == 1){
-      Serial.print("Last Loop Duration: ");
-      Serial.print(lastSample);  
+    long lastSample = indexTime - lastStart;
+    
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 1){
+        Serial.print("Last Loop Duration: ");
+        Serial.print(lastSample);  
+      }
+    #endif
+    
+    lastStart = indexTime;
+    
+    /*     ** IMU TIMING **       */   
+    while((micros() - imuEndTime) < SAMPLETIME){
+      indexTime = micros();
     }
-  #endif
-  
-  lastStart = indexTime;
-
-  /*     ** IMU TIMING **       */   
-  while((micros() - imuEndTime) < SAMPLETIME){
-    indexTime = micros();
-  }
-
-  #ifdef PRINT_SERIALDATA
-    if(chAux2() == 1){
-      Serial.print(",\t IMU: ");
-      Serial.print(indexTime - imuEndTime);
-    }
-  #endif
-
-  imuEndTime = indexTime;  // record end time to use for sampling calculation  
+    
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 1){
+        Serial.print(",\t IMU: ");
+        Serial.print(indexTime - imuEndTime);
+      }
+    #endif
+    
+    imuEndTime = indexTime;  // record end time to use for sampling calculation  
       
 
    /*     ** IMU DATA COLLECTION **       */
@@ -147,7 +141,7 @@ void loop() {
 
         case 1: //if the arm  switch is set to 1, start the PID calculation
 
-          /*      ** PID TIMING **      */            
+          /*      ** PID TIMING **      */         
           while((micros() - pidEndTime) < SAMPLETIME){
             indexTime = micros();
           }
@@ -160,7 +154,7 @@ void loop() {
           #endif
           
           pidEndTime = indexTime;
-          
+            
 
           /*      ** PROCESS INPUT DATA **      */ 
           initPids(); 
@@ -183,13 +177,19 @@ void loop() {
     }else if(failsafeState() != 0){
     
     //turn motors off if failsafe is triggered
-    Serial.print(failsafeState());
+    #ifdef PRINT_SERIALDATA
+      Serial.print(failsafeState());
+    #endif
+    
     armState = false;
     
     }else{
     
     //turn motors off if something else happens
-    Serial.print(failsafeState());
+    #ifdef PRINT_SERIALDATA
+      Serial.print(failsafeState());
+    #endif
+    
     armState = false;
     
     }
@@ -208,7 +208,10 @@ void loop() {
 
   
     #ifdef PRINT_SERIALDATA
+      printSerial(); // used for GUI application and debugging
+      if(chAux2() != 0){
         Serial.println("");
+      }
     #endif
 
 }
@@ -224,4 +227,23 @@ int armingState(){
 
 int lastArmingState(){
   return lastArmState;
+}
+  
+void printSerial(){
+
+/*
+
+  switch(chAux2()){
+    
+    case 0: break;
+
+    case 1: break;
+
+    case 2: break;
+
+    default: break;
+    
+  }
+*/
+    
 }
