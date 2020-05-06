@@ -42,6 +42,7 @@ long imuEndTime = 0;
 long pidEndTime = 0;
 long lastStart = 0;
 
+
 #ifdef AIO_v01 //prototype v0.1 configuration - LEGACY
   byte motorOutput[] = {9, 5, 10, 6};  
   #define ATMEGA32u4
@@ -60,6 +61,11 @@ long lastStart = 0;
 
 #ifdef AIO_v041 //version 0.4.1 configuration - Black PCB
   byte motorOutput[] = {10, 9, 5, 6};  
+  #define ATMEGA32u4
+#endif
+
+#ifdef CUSTOM_FC // define motor pinout for custom flight controller
+//  byte motorOutput[] = { w, x, y, z };  
   #define ATMEGA32u4
 #endif
 
@@ -202,9 +208,7 @@ void loop() {
 
   
     #ifdef PRINT_SERIALDATA
-      if(chAux2() != 0){
         Serial.println("");
-      }
     #endif
 
 }
