@@ -157,19 +157,21 @@ void readIMU(){
           fifoCount -= packetSize;
 
           mpu.dmpGetQuaternion(&q, fifoBuffer);
-          Quaternion p(sin(M_PI/8), 0, 0, cos(M_PI/8));
+//          Quaternion p(sin(M_PI/8), 0, 0, cos(M_PI/8));
+//
+//          // quaternion multiplication: q * p, stored back in p
+//          p = q.getProduct(p);
+//      
+//          // quaternion multiplication: p * conj(q), stored back in p
+//          p.getProduct(q.getConjugate());
+//          
+//          mpu.dmpGetGravity(&gravity, &p);
+//          mpu.dmpGetYawPitchRoll(ypr, &p, &gravity);
+          mpu.dmpGetGravity(&gravity, &q);
+          mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-          // quaternion multiplication: q * p, stored back in p
-          p = q.getProduct(p);
-      
-          // quaternion multiplication: p * conj(q), stored back in p
-          p.getProduct(q.getConjugate());
-          
-          mpu.dmpGetGravity(&gravity, &p);
-          mpu.dmpGetYawPitchRoll(ypr, &p, &gravity);
-
-          angle.x = 0 - (ypr[2] * 180/M_PI);
-          angle.y = 0 - (ypr[1] * 180/M_PI);
+          angle.x = 0 - (ypr[1] * 180/M_PI);
+          angle.y = 0 - (ypr[2] * 180/M_PI);
           angle.z = 0 - (ypr[0] * 180/M_PI);
           
           #ifdef PRINT_SERIALDATA
