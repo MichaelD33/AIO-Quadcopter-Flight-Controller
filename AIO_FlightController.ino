@@ -3,7 +3,7 @@
  *  
  *  Copyright © 2018-2020 Michael Delaney. All rights reserved.
  * 
- *  This program takes orientation data from an inertial measurement unit in addition to input from an external remote 
+ *  This program takes orientation data from an inertial measurement unit and input from an external remote 
  *  in order to adjust its position by varying the speed of its motors according to calculations made by the control loop.
  * 
  *  Source Code: https://github.com/MichaelD33/AIO-Quadcopter-Flight-Controller
@@ -37,12 +37,11 @@
 bool armState = false;
 bool lastArmState = false;
 
-#ifdef LOOP_SAMPLING
-  long indexTime;
-  long imuEndTime = 0;
-  long pidEndTime = 0;
-  long lastStart = 0;
-#endif
+long indexTime;
+long imuEndTime = 0;
+long pidEndTime = 0;
+long lastStart = 0;
+
 
 #ifdef AIO_v01 //prototype v0.1 configuration - LEGACY
   byte motorOutput[] = {9, 5, 10, 6};  
@@ -62,6 +61,11 @@ bool lastArmState = false;
 
 #ifdef AIO_v041 //version 0.4.1 configuration - Black PCB
   byte motorOutput[] = {10, 9, 5, 6};  
+  #define ATMEGA32u4
+#endif
+
+#ifdef CUSTOM_FC // define motor pinout for custom flight controller
+//  byte motorOutput[] = { w, x, y, z };  
   #define ATMEGA32u4
 #endif
 
@@ -95,40 +99,38 @@ void setup() {
 
 void loop() {
 
-  #ifdef LOOP_SAMPLING
-
-    /*     ** LOOP TIMING **      */         
-    while((micros() - lastStart) < LOOP_SAMPLETIME){
-      indexTime = micros();
-    }
+/*            ** LOOP TIMING **               */  
        
+  while((micros() - lastStart) < SAMPLETIME){
     indexTime = micros();
-    long lastSample = indexTime - lastStart;
+  }
+     
+  indexTime = micros();
+  long lastSample = indexTime - lastStart;
 
-    #ifdef PRINT_SERIALDATA
-      if(chAux2() == 1){
-        Serial.print("Last Loop Duration: ");
-        Serial.print(lastSample);  
-      }
-    #endif
-    
-    lastStart = indexTime;
-
-    /*     ** IMU TIMING **       */   
-    while((micros() - imuEndTime) < IMU_SAMPLETIME){
-      indexTime = micros();
+  #ifdef PRINT_SERIALDATA
+    if(chAux2() == 1){
+      Serial.print("Last Loop Duration: ");
+      Serial.print(lastSample);  
     }
-
-    #ifdef PRINT_SERIALDATA
-      if(chAux2() == 1){
-        Serial.print(",\t IMU: ");
-        Serial.print(indexTime - imuEndTime);
-      }
-    #endif
-
-    imuEndTime = indexTime;  // record end time to use for sampling calculation  
-      
   #endif
+  
+  lastStart = indexTime;
+
+  /*     ** IMU TIMING **       */   
+  while((micros() - imuEndTime) < SAMPLETIME){
+    indexTime = micros();
+  }
+
+  #ifdef PRINT_SERIALDATA
+    if(chAux2() == 1){
+      Serial.print(",\t IMU: ");
+      Serial.print(indexTime - imuEndTime);
+    }
+  #endif
+
+  imuEndTime = indexTime;  // record end time to use for sampling calculation  
+      
 
    /*     ** IMU DATA COLLECTION **       */
    readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
@@ -145,22 +147,20 @@ void loop() {
 
         case 1: //if the arm  switch is set to 1, start the PID calculation
 
-          /*      ** PID TIMING **      */ 
-          #ifdef LOOP_SAMPLING            
-            while((micros() - pidEndTime) < PID_SAMPLETIME){
-              indexTime = micros();
-            }
+          /*      ** PID TIMING **      */            
+          while((micros() - pidEndTime) < SAMPLETIME){
+            indexTime = micros();
+          }
 
-            #ifdef PRINT_SERIALDATA
-              if(chAux2() == 1){
-                Serial.print(",\t PID: ");
-                Serial.println(indexTime - pidEndTime);
-              }
-            #endif
-            
-            pidEndTime = indexTime;
-            
+          #ifdef PRINT_SERIALDATA
+            if(chAux2() == 1){
+              Serial.print(",\t PID: ");
+              Serial.println(indexTime - pidEndTime);
+            }
           #endif
+          
+          pidEndTime = indexTime;
+          
 
           /*      ** PROCESS INPUT DATA **      */ 
           initPids(); 
@@ -208,10 +208,7 @@ void loop() {
 
   
     #ifdef PRINT_SERIALDATA
-      printSerial(); // used for GUI application and debugging
-      if(chAux2() != 0){
         Serial.println("");
-      }
     #endif
 
 }
@@ -227,23 +224,4 @@ int armingState(){
 
 int lastArmingState(){
   return lastArmState;
-}
-  
-void printSerial(){
-
-/*
-
-  switch(chAux2()){
-    
-    case 0: break;
-
-    case 1: break;
-
-    case 2: break;
-
-    default: break;
-    
-  }
-*/
-    
 }

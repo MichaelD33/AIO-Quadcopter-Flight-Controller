@@ -11,6 +11,10 @@ int chPitch();
 int chYaw();
 int chAux1();
 int chAux2();
+int chAux3();
+int chAux4();
+float chAuxPot1();
+float chAuxPot2();
 int failsafeState();
 
 #endif

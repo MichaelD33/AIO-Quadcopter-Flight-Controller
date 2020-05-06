@@ -17,184 +17,183 @@
 #include "imu.h"
 #include "RX.h"
 
-static axis_float_t angle; // angle calculated using accelerometer
-static axis_int16_t gyroRates;
+#include "src/I2Cdev.h"
+#include "src/MPU6050_6Axis_MotionApps20.h"
+#include "src/helper_3dmath.h"
 
-float roll, pitch, yaw, TmpRaw;
-int AcXRaw,AcYRaw,AcZRaw,GyXRaw,GyYRaw,GyZRaw;
+MPU6050 mpu;
 
-float delta_t;
-unsigned long previousTime = 0;
-unsigned long currentTime = 0;
+#define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 
-// extern unsigned long imuEndTime;
 
-#ifdef HORIZON
-   median_filter_t accel_x_filter = median_filter_new(FILTER_COMPARISONS,0); //declare median filter for x axis 
-   median_filter_t accel_y_filter = median_filter_new(FILTER_COMPARISONS,0); //declare median filter for y axis
-   median_filter_t accel_z_filter = median_filter_new(FILTER_COMPARISONS,0); //declare median filter for z axis
-#endif
+// MPU control/status vars
+bool dmpReady = false;  // set true if DMP init was successful
+uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
+uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
+uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
+uint16_t fifoCount;     // count of all bytes currently in FIFO
+uint8_t fifoBuffer[64]; // FIFO storage buffer
 
- void initIMU(){ 
+// orientation/motion vars
+Quaternion q;           // [w, x, y, z]         quaternion container
+
+VectorFloat gravity;    // [x, y, z]            gravity vector
+// float euler[3];         // [psi, theta, phi]    Euler angle container
+float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+
+axis_float_t angle;
+
+
+// ================================================================
+// ===               INTERRUPT DETECTION ROUTINE                ===
+// ================================================================
+
+volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
+void dmpDataReady() {
+    mpuInterrupt = true;
+}
+
+
+void initIMU(){ 
    
    Wire.begin();
 
    #ifdef I2C_FASTMODE
      Wire.setClock(400000); // 400kHz I2C clock. Comment this line if microcontroller does not support 400kHz
    #endif
-   
-   Wire.beginTransmission(MPU_ADDR);
-   Wire.write(0x6B);  // PWR_MGMT_1 register
-   Wire.write(0);     // set to zero (wakes up the MPU-6050)
-   Wire.endTransmission(true);  
-   
-   Wire.beginTransmission(MPU_ADDR);
-   Wire.write(0x1B);  // Access register 1B - gyroscope config
-   #ifdef GYRO_SENSITIVITY_250
-     Wire.write(B00000000); // Setting the gyro to full scale +/- 250 deg/sec
-   #elif defined GYRO_SENSITIVITY_500
-     Wire.write(B00001000); // Setting the gyro to full scale +/- 500 deg/sec
-   #elif defined GYRO_SENSITIVITY_1000
-     Wire.write(B00010000); // Setting the gyro to full scale +/- 1000 deg/sec
-   #elif defined GYRO_SENSITIVITY_2000
-     Wire.write(B00011000); // Setting the gyro to full scale +/- 2000 deg/sec
-   #endif
-   Wire.endTransmission(true);
-   
-   Wire.beginTransmission(MPU_ADDR);
-   Wire.write(0x1C);  // Access register 1C - accelerometer config
 
-   #ifdef ACC_SENSITIVITY_2G
-     Wire.write(B00000000); // Setting the accelerometer to +/- 2g
-     #define ACCEL_SENS 16384
-   #elif defined ACC_SENSITIVITY_4G
-     Wire.write(B00001000); // Setting the accelerometer to +/- 4g
-     #define ACCEL_SENS 8192
-   #elif defined ACC_SENSITIVITY_8G
-     Wire.write(B00010000); // Setting the accelerometer to +/- 8g
-     #define ACCEL_SENS 4096
-   #elif defined ACC_SENSITIVITY_16G
-     Wire.write(B00011000); // Setting the accelerometer to +/- 16g
-     #define ACCEL_SENS 2048   
-   #endif
-  
-   Wire.endTransmission(true);
-   Wire.beginTransmission(MPU_ADDR);
-   Wire.write(0x1A);  // digital low pass filter register 0x1A
+   Serial.println(F("Initializing I2C devices..."));
+   mpu.initialize();
+   pinMode(INTERRUPT_PIN, INPUT);
 
-   #ifdef DIGITAL_LOW_PASS_FILTER
-     Wire.write(B00000100); // ENABLING LOW PASS FILTRATION
-   #else
-     Wire.write(B00000000);
-   #endif     
-     
-   Wire.endTransmission(true);
-   Wire.beginTransmission(MPU_ADDR);
-   Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
-   Wire.endTransmission(false);
+   // verify connection
+   Serial.println(F("Testing device connections..."));
+   Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+
+   // wait for ready
+   Serial.println(F("\nSend any character to begin DMP programming and demo: "));
+   while (Serial.available() && Serial.read()); // empty buffer
+   while (!Serial.available());                 // wait for data
+   while (Serial.available() && Serial.read()); // empty buffer again
+
+   // configure the DMP
+   Serial.println(F("Initializing DMP..."));
+   devStatus = mpu.dmpInitialize();
+
+   // supply your own gyro offsets here, scaled for min sensitivity
+   mpu.setXGyroOffset(GYRO_X_OFFSET);
+   mpu.setYGyroOffset(GYRO_Y_OFFSET);
+   mpu.setZGyroOffset(GYRO_Z_OFFSET);
+   mpu.setZAccelOffset(ACCEL_Z_OFFSET);
+
+   if (devStatus == 0) {
+       // turn on the DMP, now that it's ready
+       Serial.println(F("Enabling DMP..."));
+       mpu.setDMPEnabled(true);
+
+       // enable Arduino interrupt detection
+       Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+       attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+       mpuIntStatus = mpu.getIntStatus();
+
+       // set our DMP Ready flag so the main loop() function knows it's okay to use it
+       Serial.println(F("DMP ready! Waiting for first interrupt..."));
+       dmpReady = true;
+
+        // get expected DMP packet size for later comparison
+       packetSize = mpu.dmpGetFIFOPacketSize();
+   } else {
+       // ERROR!
+       // 1 = initial memory load failed
+       // 2 = DMP configuration updates failed
+       // (if it's going to break, usually the code will be 1)
+       Serial.print(F("DMP Initialization failed (code "));
+       Serial.print(devStatus);
+       Serial.println(F(")"));
+   }
 
 }
 
 void readIMU(){   
-   
-   Wire.beginTransmission(MPU_ADDR);
-   Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
-   Wire.endTransmission(false);
-   Wire.requestFrom(MPU_ADDR,14);  // request a total of 14 registers
-   AcXRaw=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
-   AcYRaw=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
-   AcZRaw=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
-   TmpRaw=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
-   GyYRaw=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
-   GyXRaw=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
-   GyZRaw=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-   
-   processGyro();  
-   
-}
 
-void processGyro(){  
+  if (!dmpReady) return;
+
+      // wait for MPU interrupt or extra packet(s) available
+      while (!mpuInterrupt && fifoCount < packetSize) {
+          
+          /*
+
+          other program behavior stuff here...
+          
+          test in between other stuff to see if mpuInterrupt is true, and if so, "break;" from the loop to process MPU data           
+
+           */
+
+      }
   
-  gyroRates.y = (GyYRaw - GYRO_Y_OFFSET) / GYRO_SENS;
-  gyroRates.x = (GyXRaw - GYRO_X_OFFSET) / GYRO_SENS;
-  gyroRates.z = (GyZRaw - GYRO_Z_OFFSET) / GYRO_SENS;
-    
-  #ifdef HORIZON
-    processAcc();
-    imuCombine();
-  #endif
-
-}
-
-void processAcc(){
-    //filtering accelerometer noise using a median filter
-#ifdef HORIZON
-    axis_float_t accel_filtered; // filtered accelerometer raw values
-   
-    median_filter_in(accel_x_filter, AcXRaw);
-    median_filter_in(accel_y_filter, AcYRaw);
-    median_filter_in(accel_z_filter, AcZRaw);
-
-    accel_filtered.x = (median_filter_out(accel_x_filter));
-    accel_filtered.y = (median_filter_out(accel_y_filter));
-    accel_filtered.z = (median_filter_out(accel_z_filter));
-
-    roll = (atan2(accel_filtered.x, sqrt((accel_filtered.y * accel_filtered.y) + (accel_filtered.z * accel_filtered.z))) * 180) / M_PI; 
-    pitch = (atan2(accel_filtered.y, sqrt((accel_filtered.x * accel_filtered.x) + (accel_filtered.z * accel_filtered.z))) * 180) / M_PI; 
-    //yaw = 
-    
-//    roll = (atan2(accel_filtered.x, accel_filtered.z)*180)/M_PI; // -180° --> 180°
-//    pitch = (atan2(accel_filtered.y, accel_filtered.z)*180)/M_PI; // -180° --> 180°
-#endif
-}
-
-void imuCombine(){
-
-  #ifdef LOOP_SAMPLING
-
-     angle.y = GYRO_PART * (angle.y + (gyroRates.x * PID_SAMPLETIME_S)) + (1-GYRO_PART) * pitch; //complementary filter
-     angle.x = GYRO_PART * (angle.x + (gyroRates.y * PID_SAMPLETIME_S)) + (1-GYRO_PART) * roll;
-     //angle.z = angle.z + (gyroRates.z * PID_SAMPLETIME_S);
-     angle.z = (gyroRates.z * PID_SAMPLETIME_S);
-
-  #else
-     currentTime = micros();
-     delta_t = (currentTime - previousTime) / 1000000;
-     
-     angle.y = GYRO_PART * (angle.y + (gyroRates.x * delta_t)) + (1-GYRO_PART) * pitch; //complementary filter
-     angle.x = GYRO_PART * (angle.x + (gyroRates.y * delta_t)) + (1-GYRO_PART) * roll;
-     angle.z = (gyroRates.z * delta_t);     
-     
-     previousTime = currentTime;
-  #endif
-
-  #ifdef PRINT_SERIALDATA
-    if(chAux2() == 2){
-       //Serial.print("X-Angle: ");
-       Serial.print(angle.x);
+      // reset interrupt flag and get INT_STATUS byte
+      mpuInterrupt = false;
+      mpuIntStatus = mpu.getIntStatus();
   
-       Serial.print(",");
-       Serial.print(angle.y);
+      // get current FIFO count
+      fifoCount = mpu.getFIFOCount();
   
-       Serial.print(",");
-       Serial.print(angle.z);
-    }
-    
-    if(chAux2() == 0){
-       Serial.print(",");
-       Serial.print(angle.x);
-       Serial.print(",");
-       Serial.print(angle.y);
-       Serial.print(",");
-       Serial.println(angle.z);
-    }
-  #endif
-   
-}
+      // check for overflow (this should never happen unless our code is too inefficient)
+      if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
+          // reset so we can continue cleanly
+          mpu.resetFIFO();
+          Serial.println(F("FIFO overflow!"));
+  
+      // otherwise, check for DMP data ready interrupt (this should happen frequently)
+      } else if (mpuIntStatus & 0x02) {
+          // wait for correct available data length, should be a VERY short wait
+          while (fifoCount < packetSize) fifoCount = mpu.getFIFOCount();
+  
+          // read a packet from FIFO
+          mpu.getFIFOBytes(fifoBuffer, packetSize);
+          
+          // track FIFO count here in case there is > 1 packet available
+          // (this lets us immediately read more without waiting for an interrupt)
+          fifoCount -= packetSize;
 
+          mpu.dmpGetQuaternion(&q, fifoBuffer);
+//          Quaternion p(sin(M_PI/8), 0, 0, cos(M_PI/8));
+//
+//          // quaternion multiplication: q * p, stored back in p
+//          p = q.getProduct(p);
+//      
+//          // quaternion multiplication: p * conj(q), stored back in p
+//          p.getProduct(q.getConjugate());
+//          
+//          mpu.dmpGetGravity(&gravity, &p);
+//          mpu.dmpGetYawPitchRoll(ypr, &p, &gravity);
+          mpu.dmpGetGravity(&gravity, &q);
+          mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-axis_int16_t imu_rates() {
-  return gyroRates;
+          angle.x = 0 - (ypr[1] * 180/M_PI);
+          angle.y = 0 - (ypr[2] * 180/M_PI);
+          angle.z = 0 - (ypr[0] * 180/M_PI);
+          
+          #ifdef PRINT_SERIALDATA
+            if(chAux2() == 2){ 
+              Serial.print("Roll:");
+              Serial.print(angle.x);
+              Serial.print(", Pitch:");
+              Serial.print(angle.y);
+              Serial.print(", Yaw:");
+              Serial.print(angle.z);
+
+              Serial.print(", \t RX Roll: ");
+              Serial.print(chRoll());
+              Serial.print(", RX Pitch: ");
+              Serial.print(chPitch());
+              Serial.print(", RX Yaw: ");
+              Serial.println(chYaw());
+            }
+          #endif
+
+      }
+
 }
 
 axis_float_t imu_angles() {
