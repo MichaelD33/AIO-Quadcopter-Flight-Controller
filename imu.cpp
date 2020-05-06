@@ -62,22 +62,32 @@ void initIMU(){
      Wire.setClock(400000); // 400kHz I2C clock. Comment this line if microcontroller does not support 400kHz
    #endif
 
-   Serial.println(F("Initializing I2C devices..."));
+   #ifdef PRINT_SERIALDATA
+    Serial.println(F("Initializing I2C devices..."));
+   #endif
+   
    mpu.initialize();
    pinMode(INTERRUPT_PIN, INPUT);
+   
+   #ifdef PRINT_SERIALDATA
+     // verify connection
+     Serial.println(F("Testing device connections..."));
+     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+  
+     // wait for ready
+     Serial.println(F("\nSend any character to begin DMP programming and demo: "));
+     while (Serial.available() && Serial.read()); // empty buffer
+     while (!Serial.available());                 // wait for data
+     while (Serial.available() && Serial.read()); // empty buffer again
+  
+     // configure the DMP
+     Serial.println(F("Initializing DMP..."));
+   #else
 
-   // verify connection
-   Serial.println(F("Testing device connections..."));
-   Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
-
-   // wait for ready
-   Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-   while (Serial.available() && Serial.read()); // empty buffer
-   while (!Serial.available());                 // wait for data
-   while (Serial.available() && Serial.read()); // empty buffer again
-
-   // configure the DMP
-   Serial.println(F("Initializing DMP..."));
+     delay(1000);
+     
+   #endif
+    
    devStatus = mpu.dmpInitialize();
 
    // supply your own gyro offsets here, scaled for min sensitivity
@@ -88,16 +98,26 @@ void initIMU(){
 
    if (devStatus == 0) {
        // turn on the DMP, now that it's ready
-       Serial.println(F("Enabling DMP..."));
+       #ifdef PRINT_SERIALDATA
+        Serial.println(F("Enabling DMP..."));
+       #endif
+       
        mpu.setDMPEnabled(true);
 
        // enable Arduino interrupt detection
-       Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+       #ifdef PRINT_SERIALDATA
+        Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+       #endif
+       
        attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
        mpuIntStatus = mpu.getIntStatus();
 
        // set our DMP Ready flag so the main loop() function knows it's okay to use it
-       Serial.println(F("DMP ready! Waiting for first interrupt..."));
+
+       #ifdef PRINT_SERIALDATA
+        Serial.println(F("DMP ready! Waiting for first interrupt..."));
+       #endif
+       
        dmpReady = true;
 
         // get expected DMP packet size for later comparison
@@ -107,9 +127,11 @@ void initIMU(){
        // 1 = initial memory load failed
        // 2 = DMP configuration updates failed
        // (if it's going to break, usually the code will be 1)
-       Serial.print(F("DMP Initialization failed (code "));
-       Serial.print(devStatus);
-       Serial.println(F(")"));
+       #ifdef PRINT_SERIALDATA
+         Serial.print(F("DMP Initialization failed (code "));
+         Serial.print(devStatus);
+         Serial.println(F(")"));
+       #endif
    }
 
 }
@@ -142,7 +164,10 @@ void readIMU(){
       if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
           // reset so we can continue cleanly
           mpu.resetFIFO();
-          Serial.println(F("FIFO overflow!"));
+
+          #ifdef PRINT_SERIALDATA
+            Serial.println(F("FIFO overflow!"));
+          #endif
   
       // otherwise, check for DMP data ready interrupt (this should happen frequently)
       } else if (mpuIntStatus & 0x02) {
@@ -175,6 +200,7 @@ void readIMU(){
           angle.z = 0 - (ypr[0] * 180/M_PI);
           
           #ifdef PRINT_SERIALDATA
+/*          
             if(chAux2() == 2){ 
               Serial.print("Roll:");
               Serial.print(angle.x);
@@ -189,6 +215,15 @@ void readIMU(){
               Serial.print(chPitch());
               Serial.print(", RX Yaw: ");
               Serial.println(chYaw());
+            }
+*/
+
+            if(chAux2() == 2){ 
+              Serial.print(angle.x);
+              Serial.print(", ");
+              Serial.print(angle.y);
+              Serial.print(", ");
+              Serial.print(angle.z);
             }
           #endif
 

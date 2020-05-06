@@ -119,26 +119,20 @@ void computePids(){
         motorSpeed.four = ESC_MIN;
        }else{ } 
 
-//    if(chAux2() == 0){
-//      Serial.print("IMU Roll: ");      
-//      Serial.print(imu_angles().x);
-//      Serial.print("IMU Pitch: ");      
-//      Serial.print(imu_angles().y);
-//      Serial.print(", Kp: ");
-//      Serial.print(Kp);
-//      Serial.print(", Ki: ");
-//      Serial.print(Ki, 4);
-//      Serial.print(", Kd: ");
-//      Serial.print(Kd);
-//
-//    }
-
-    if(chAux2() == 0){
-      Serial.print("outputX: ");
-      Serial.print(outputX);
-      Serial.print(", outputY: ");
-      Serial.print(outputY);
-    }
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 0){
+        Serial.print("IMU Roll: ");      
+        Serial.print(imu_angles().x);
+        Serial.print(", IMU Pitch: ");      
+        Serial.print(imu_angles().y);
+        Serial.print(", Kp: ");
+        Serial.print(Kp);
+        Serial.print(", Ki: ");
+        Serial.print(Ki, 4);
+        Serial.print(", Kd: ");
+        Serial.println(Kd);
+      }
+    #endif
            
 }
 
