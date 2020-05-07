@@ -89,10 +89,10 @@ void computePids(){
  
   
     //write outputs to corresponding motors at the corresponding speed
-     motorSpeed.one = abs(chThrottle() - outputX + outputY - outputZ); 
-     motorSpeed.two = abs(chThrottle() + outputX + outputY + outputZ); 
-     motorSpeed.three = abs(chThrottle() + outputX - outputY - outputZ);
-     motorSpeed.four = abs(chThrottle() - outputX - outputY + outputZ);
+     motorSpeed.one = (chThrottle() - outputX + outputY - outputZ); 
+     motorSpeed.two = (chThrottle() + outputX + outputY + outputZ); 
+     motorSpeed.three = (chThrottle() + outputX - outputY - outputZ);
+     motorSpeed.four = (chThrottle() - outputX - outputY + outputZ);
      
      //clamp the min and max output from the pid controller (to match the needed 0-255 for pwm)
      if(motorSpeed.one > ESC_MAX){
