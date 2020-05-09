@@ -12,6 +12,7 @@
 /* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
 /*  STABILIZATION MODE  */
+    #define ACRO
     #define HORIZON // This is the only supported stabilization mode (at the moment)... Do not change.
 
 /* FLIGHT CONTROLLER BOARD CONFIG */
@@ -35,7 +36,7 @@
 
 /* ———————————————————————————————————————————————PROGRAM CONFIGURATION———————————————————————————————————————————————— */
 
-    #define SAMPLETIME 10000 //define loop sample time at a frequency of 3000µs
+    #define SAMPLETIME 10000 //define loop sample time at a frequency of 10000µs
     #define SAMPLETIME_S 0.01
     
 /* ———————————————————————————————————————————INERTIAL MEASURMENT UNIT CONFIGURATION—————————————————————————————————————————— */
