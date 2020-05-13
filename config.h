@@ -36,8 +36,8 @@
 
 /* ———————————————————————————————————————————————PROGRAM CONFIGURATION———————————————————————————————————————————————— */
 
-    #define SAMPLETIME 10000 //define loop sample time at a frequency of 10000µs
-    #define SAMPLETIME_S 0.01
+    #define SAMPLETIME 5000 //define loop sample time at a frequency of 10000µs
+    #define SAMPLETIME_S 0.005
     
 /* ———————————————————————————————————————————INERTIAL MEASURMENT UNIT CONFIGURATION—————————————————————————————————————————— */
 
