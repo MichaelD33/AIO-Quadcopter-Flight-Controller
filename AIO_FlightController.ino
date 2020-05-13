@@ -85,6 +85,9 @@ void setup() {
   initSbus();  //connect to the remote reciever (rx.cpp)
   initIMU();   //activate the imu and set gyroscope and accelerometer sensitivity (imu.cpp)
 
+  readIMU();
+  readRx();
+
   indexTime = micros();
   imuEndTime = micros();
   pidEndTime = micros();
@@ -110,28 +113,6 @@ void loop() {
     #endif
     
     lastStart = indexTime;
-    
-    /*     ** IMU TIMING **       */   
-    while((micros() - imuEndTime) < SAMPLETIME){
-      indexTime = micros();
-    }
-    
-    #ifdef PRINT_SERIALDATA
-      if(chAux2() == 1){
-        Serial.print(",\t IMU: ");
-        Serial.print(indexTime - imuEndTime);
-      }
-    #endif
-    
-    imuEndTime = indexTime;  // record end time to use for sampling calculation  
-      
-
-   /*     ** IMU DATA COLLECTION **       */
-   readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
-              // IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
-  
-   /*     ** RX DATA COLLECTION **       */
-   readRx();  //read the remote and convert data to a rotational rate of ±180°/s (rx.cpp)
 
    /*     ** PROGRAM START CONTINGENCY **       */
    if(failsafeState() == 0){
@@ -203,6 +184,31 @@ void loop() {
       writeMotor(3, 0);
 
     }
+
+
+    /*     ** IMU TIMING **       */   
+    while((micros() - imuEndTime) < SAMPLETIME){
+      indexTime = micros();
+    }
+    
+    #ifdef PRINT_SERIALDATA
+      if(chAux2() == 1){
+        Serial.print(",\t IMU: ");
+        Serial.print(indexTime - imuEndTime);
+      }
+    #endif
+    
+    imuEndTime = indexTime;  // record end time to use for sampling calculation  
+      
+
+   /*     ** IMU DATA COLLECTION **       */
+   readIMU(); //read the imu and calculate the quadcopters position relative to gravity (imu.cpp)
+              // IMU supports up to 8kHz gyro update rate and 1kHz acc update rate --- when DLPF is activated this is diminished significantly (see MPU6050 register mapping datasheet)
+  
+   /*     ** RX DATA COLLECTION **       */
+   readRx();  //read the remote and convert data to a rotational rate (rx.cpp)
+
+    
     
     lastArmState = armState;
 
