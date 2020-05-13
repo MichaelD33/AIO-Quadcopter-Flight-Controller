@@ -41,7 +41,10 @@ VectorFloat gravity;    // [x, y, z]            gravity vector
 // float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
+int rateArray[3];
+
 axis_float_t angle;
+axis_float_t rate;
 
 
 // ================================================================
@@ -182,22 +185,20 @@ void readIMU(){
           fifoCount -= packetSize;
 
           mpu.dmpGetQuaternion(&q, fifoBuffer);
-//          Quaternion p(sin(M_PI/8), 0, 0, cos(M_PI/8));
-//
-//          // quaternion multiplication: q * p, stored back in p
-//          p = q.getProduct(p);
-//      
-//          // quaternion multiplication: p * conj(q), stored back in p
-//          p.getProduct(q.getConjugate());
-//          
-//          mpu.dmpGetGravity(&gravity, &p);
-//          mpu.dmpGetYawPitchRoll(ypr, &p, &gravity);
           mpu.dmpGetGravity(&gravity, &q);
           mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
           angle.x = 0 - (ypr[1] * 180/M_PI);
           angle.y = 0 - (ypr[2] * 180/M_PI);
           angle.z = 0 - (ypr[0] * 180/M_PI);
+
+
+
+          mpu.dmpGetGyro(rateArray, fifoBuffer);
+
+          rate.y = rateArray[0];
+          rate.x = rateArray[1];
+          rate.z = rateArray[2];
           
           #ifdef PRINT_SERIALDATA
 /*          
@@ -214,16 +215,21 @@ void readIMU(){
               Serial.print(", RX Pitch: ");
               Serial.print(chPitch());
               Serial.print(", RX Yaw: ");
-              Serial.println(chYaw());
+              Serial.print(chYaw());
             }
 */
 
             if(chAux2() == 2){ 
-              Serial.print(angle.x);
+//              Serial.print(angle.x);
+//              Serial.print(", ");
+//              Serial.print(angle.y);
+//              Serial.print(", ");
+//              Serial.print(angle.z);
+              Serial.print(rate.x);
               Serial.print(", ");
-              Serial.print(angle.y);
+              Serial.print(rate.y);
               Serial.print(", ");
-              Serial.print(angle.z);
+              Serial.print(rate.z);
             }
           #endif
 
@@ -233,4 +239,8 @@ void readIMU(){
 
 axis_float_t imu_angles() {
   return angle;
+}
+
+axis_float_t imu_rates() {
+  return rate;
 }
