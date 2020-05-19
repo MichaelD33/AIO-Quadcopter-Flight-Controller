@@ -202,8 +202,8 @@ void readIMU(){
 //          rate.x = rateArray[1];
 //          rate.z = rateArray[2];
 
-          virtualRate.y = (rateArray[0]/sqrt(2) - rateArray[1]/sqrt(2));
-          virtualRate.x = (rateArray[0]/sqrt(2) + rateArray[1]/sqrt(2));
+          virtualRate.x = (rateArray[0]/sqrt(2) - rateArray[1]/sqrt(2));
+          virtualRate.y = (rateArray[0]/sqrt(2) + rateArray[1]/sqrt(2));
           virtualRate.z = rateArray[2];
 
           
