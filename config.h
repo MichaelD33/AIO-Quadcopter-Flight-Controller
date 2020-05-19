@@ -7,7 +7,7 @@
 
 /* ——————————————————————————————————————————————————————DEBUGGING————————————————————————————————————————————————————————— */
 
- #define PRINT_SERIALDATA     // enables the serial monitor and serial debugging via the remote's switches
+// #define PRINT_SERIALDATA     // enables the serial monitor and serial debugging via the remote's switches
 
 /* —————————————————————————————————————————————————AIRCRAFT CONFIGURATION——————————————————————————————————————————————————— */
 
@@ -32,7 +32,7 @@
 
 
 //  SET QUADCOPTER ROATATIONAL RATE
-    #define RC_RATES 90 // Maximum rotation: 90 degrees (in order to prevent the device from flipping over)
+    #define RC_RATES 400 // Maximum rotation: 90 degrees (in order to prevent the device from flipping over)
 
 /* ———————————————————————————————————————————————PROGRAM CONFIGURATION———————————————————————————————————————————————— */
 
