@@ -44,7 +44,9 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 int rateArray[3];
 
 axis_float_t angle;
-axis_float_t rate;
+// axis_float_t rate;
+axis_float_t virtualRate;
+
 
 
 // ================================================================
@@ -196,40 +198,30 @@ void readIMU(){
 
           mpu.dmpGetGyro(rateArray, fifoBuffer);
 
-          rate.y = rateArray[0];
-          rate.x = rateArray[1];
-          rate.z = rateArray[2];
+//          rate.y = rateArray[0];
+//          rate.x = rateArray[1];
+//          rate.z = rateArray[2];
+
+          virtualRate.x = (rateArray[0]/sqrt(2) - rateArray[1]/sqrt(2));
+          virtualRate.y = (rateArray[0]/sqrt(2) + rateArray[1]/sqrt(2));
+          virtualRate.z = rateArray[2];
+
           
-          #ifdef PRINT_SERIALDATA
-/*          
+          #ifdef PRINT_SERIALDATA         
             if(chAux2() == 2){ 
-              Serial.print("Roll:");
-              Serial.print(angle.x);
-              Serial.print(", Pitch:");
-              Serial.print(angle.y);
-              Serial.print(", Yaw:");
-              Serial.print(angle.z);
-
-              Serial.print(", \t RX Roll: ");
-              Serial.print(chRoll());
-              Serial.print(", RX Pitch: ");
-              Serial.print(chPitch());
-              Serial.print(", RX Yaw: ");
-              Serial.print(chYaw());
-            }
-*/
-
-            if(chAux2() == 2){ 
+//              Serial.print("Roll:");
 //              Serial.print(angle.x);
-//              Serial.print(", ");
+//              Serial.print(", Pitch:");
 //              Serial.print(angle.y);
-//              Serial.print(", ");
+//              Serial.print(", Yaw:");
 //              Serial.print(angle.z);
-              Serial.print(rate.x);
-              Serial.print(", ");
-              Serial.print(rate.y);
-              Serial.print(", ");
-              Serial.print(rate.z);
+//
+//              Serial.print(", \t RX Roll: ");
+//              Serial.print(chRoll());
+//              Serial.print(", RX Pitch: ");
+//              Serial.print(chPitch());
+//              Serial.print(", RX Yaw: ");
+//              Serial.print(chYaw());
             }
           #endif
 
@@ -242,5 +234,5 @@ axis_float_t imu_angles() {
 }
 
 axis_float_t imu_rates() {
-  return rate;
+  return virtualRate;
 }

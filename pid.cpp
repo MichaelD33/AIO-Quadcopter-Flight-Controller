@@ -5,11 +5,11 @@
 #include "config.h"
 
 /* PID Gains for the Rate Controller */
-float KpR = 0;
-float KiR = 0;
-float KdR = 0;
+float KpR = 0.8;
+float KiR = 0.065;
+float KdR = 7.5;
 
-float KpRZ = 0;
+float KpRZ = 0.1;
 float KiRZ = 0;
 float KdRZ = 0;
 
@@ -17,17 +17,18 @@ float KdRZ = 0;
 /* PID Gains for the Stabilization Controller */
 float Kp = 0; // 0.12;
 float Ki = 0;
-float Kd = 1.25; // 0.53 or (2.55 reduced by a factor of 2-4 a.k.a  0.65 -> 1.25)
+float Kd = 0; // 0.53 or 1.25
 
 float KpZ = 0;
 float KiZ = 0;
-float KdZ = 5;
+float KdZ = 0;
 
 float outputX, outputY, outputZ;
 
 axis_int16_t desiredAngle;
 axis_float_t currentAngle, lastAngle;
 axis_float_t error, deltaError, errorSum;
+
 
 axis_float_t errorRate, deltaRate, rateIntegral, currentRate, previousRate, rateOutput;
 
@@ -50,7 +51,7 @@ void initPids(){
     previousRate.z = currentRate.z;
 
 /* On-the-fly PID tuning configuration —> Use the remote's aux channels for adjusting gains while the device is running */
-    KpR = (0.0 + chAuxPot1()/5 + chAuxPot2()/2);
+//    KpR = (0.0 + chAuxPot1()/5 + chAuxPot2()/2);
 //    Ki = (0 + (2*chAuxPot1()) + (4*chAuxPot2())) * SAMPLETIME_S;
 //    Kd = (0.0 + (chAuxPot1()/5) + (chAuxPot2()/2)) / SAMPLETIME_S;
 } 
@@ -65,8 +66,8 @@ void computePids(){
     currentRate.y = imu_rates().y;
     currentRate.z = imu_rates().z;
     
-    errorRate.x = chRoll()  - currentRate.x;        // compute present error (proportional)
-    errorRate.y = chPitch() - currentRate.y;
+    errorRate.x = (-1 * chRoll())  - currentRate.x;        // compute present error (proportional)
+    errorRate.y = (-1 * chPitch()) - currentRate.y;
     errorRate.z = chYaw()   - currentRate.z;
 
     rateIntegral.x += KiR * errorRate.x;            // compute the total accumulation of error (integral)
@@ -79,13 +80,12 @@ void computePids(){
     
     rateOutput.x = KpR * errorRate.x  + rateIntegral.x - KdR * deltaRate.x;
     rateOutput.y = KpR * errorRate.y  + rateIntegral.y - KdR * deltaRate.y; 
-    rateOutput.z = KpRZ * errorRate.y + rateIntegral.y - KdRZ * deltaRate.y;
+    rateOutput.z = KpRZ * errorRate.z + rateIntegral.z - KdRZ * deltaRate.z;
 
-
-     motorSpeed.one = (chThrottle() - rateOutput.x + rateOutput.y - rateOutput.z); 
-     motorSpeed.two = (chThrottle() + rateOutput.x + rateOutput.y + rateOutput.z); 
-     motorSpeed.three = (chThrottle() + rateOutput.x - rateOutput.y - rateOutput.z);
-     motorSpeed.four = (chThrottle() - rateOutput.x - rateOutput.y + rateOutput.z);
+    motorSpeed.one = (chThrottle() - rateOutput.y - rateOutput.z); 
+    motorSpeed.two = (chThrottle() - rateOutput.x + rateOutput.z); 
+    motorSpeed.three = (chThrottle() + rateOutput.y - rateOutput.z);
+    motorSpeed.four = (chThrottle() + rateOutput.x + rateOutput.z);
 
 
     /*  —————————————————————————————————— The Angle PID Controller ——————————————————————————————————  
@@ -178,16 +178,14 @@ void computePids(){
 
     #ifdef PRINT_SERIALDATA
       if(chAux2() == 0){
-        Serial.print("IMU Roll: ");      
+        Serial.print("RX-X:");      
+        Serial.print(chRoll());
+        Serial.print(", RX-Y:");      
+        Serial.print(chPitch());
+        Serial.print(", Rate-X:");
         Serial.print(currentRate.x);
-        Serial.print(", IMU Pitch: ");      
-        Serial.print(currentRate.y);
-        Serial.print(", Kp: ");
-        Serial.print(KpR, 3);
-        Serial.print(", Ki: ");
-        Serial.print(KiR, 4);
-        Serial.print(", Kd: ");
-        Serial.println(KdR);
+        Serial.print(", Rate-Y:");
+        Serial.println(currentRate.y);
       }
     #endif
            
