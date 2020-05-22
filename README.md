@@ -4,7 +4,7 @@
 
 Read about this project on my website: https://delaney.nyc/projects/
 
-Follow the full project developement on the GitHub project page: https://github.com/users/MichaelD33/projects/1
+Follow the full project development on the GitHub project page: https://github.com/users/MichaelD33/projects/1
 
 __Disclaimer:__ This is a functional *yet unfinished* project. The information in this repository is provided without warranty or guaranteed funtionality. If you attempt to replicate this project, I am not responsible for any damages or failures associated with your work.
 
