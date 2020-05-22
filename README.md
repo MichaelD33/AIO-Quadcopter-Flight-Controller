@@ -6,14 +6,14 @@ Read about this project on my website: https://delaney.nyc/projects/
 
 Follow the full project developement on the GitHub project page: https://github.com/users/MichaelD33/projects/1
 
+__Disclaimer:__ This is a functional *yet unfinished* project. The information in this repository is provided without warranty or guaranteed funtionality. If you attempt to replicate this project, I am not responsible for any damages or failures associated with your work.
+
 ---
 
 ### Basic Overview
 This repository contains the flight controller firmware for my custom designed micro quadcopter. This quadcopter design is based on the atmega32u4 chipset. Find the flight controller design files, here: https://github.com/MichaelD33/AIO-Quadcopter-Design
 
 This program takes orientation data from an inertial measurement unit and input from an external remote in order to fly by adjusting the speed of its motors according to calculations made by the control loop.
-
-This is a functional *yet unfinished* project. The information in this repository is provided without warranty or guaranteed funtionality. If you attempt to replicate this project, I am not responsible for any damages or failures associated with your work.
 
 ---
 
