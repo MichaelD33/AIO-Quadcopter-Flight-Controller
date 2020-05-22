@@ -13,6 +13,8 @@ This repository contains the flight controller firmware for my custom designed m
 
 This program takes orientation data from an inertial measurement unit and input from an external remote in order to fly by adjusting the speed of its motors according to calculations made by the control loop.
 
+This is a functional *yet unfinished* project. The information in this repository is provided without warranty or guaranteed funtionality. If you attempt to replicate this project, I am not responsible for any damages or failures associated with your work.
+
 ---
 
 ### Setup and Operation 
