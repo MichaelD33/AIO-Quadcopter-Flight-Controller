@@ -50,8 +50,9 @@ The remote configuration is fairly straight-forward if you will be using an s.Bu
 
 *(If these parameters are not configured the quadcopter may start the motors even while the throttle is at 0)*
 
+---
 
-__Dependancies:__
+### Dependancies:
 The flight control software is built upon the following resources:
 - https://github.com/zendes/SBUS
 - https://github.com/jrowberg/i2cdevlib
